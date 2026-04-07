@@ -49,14 +49,13 @@ def build_initial_state() -> DashboardState:
     state.scheduler.mode = "Dynamic"
     state.scheduler.queue = []
     state.scheduler.allocations = []
+    example_routes = ["Painting->Machine1", "Assembly->Machine2", "Inspection->Machine3", "Welding->Machine4"]
     state.alerts = [
         AlertEvent(timestamp=datetime.now(), severity="Info", message="Dashboard initialized with all AMRs at the loading station."),
         AlertEvent(
             timestamp=datetime.now(),
             severity="Info",
-            message="Select operations such as "
-            + ", ".join(f"{name}->{PROCESS_TO_MACHINE[name]}" for name in DEFAULT_OPERATIONS)
-            + " or Welding->Machine4 to generate the route automatically.",
+            message="Select operations such as " + ", ".join(example_routes) + " to generate the route automatically.",
         ),
     ]
     return state

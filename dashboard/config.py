@@ -84,4 +84,4 @@ PROCESS_LABELS = {
     "Welding": "Welding (Machine 4)",
 }
 
-DEFAULT_OPERATIONS = ["Painting", "Inspection"]
+DEFAULT_OPERATIONS: list[str] = []

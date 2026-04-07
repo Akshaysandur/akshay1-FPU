@@ -54,8 +54,8 @@ def render_sidebar(client: DashboardMQTTClient) -> None:
         format_func=lambda item: PROCESS_LABELS[item],
         help="Choose processes and the machine route is generated automatically.",
     )
-    route = route_from_operations(selected_operations)
-    st.sidebar.text_input("Generated Route", value=" -> ".join(route), disabled=True)
+    route = route_from_operations(selected_operations) if selected_operations else []
+    st.sidebar.text_input("Generated Route", value=" -> ".join(route) if route else "", disabled=True)
     priority = st.sidebar.slider("Priority", min_value=1, max_value=5, value=3)
 
     if st.sidebar.button("Create Job", use_container_width=True, disabled=not selected_operations):
@@ -212,15 +212,45 @@ def main() -> None:
     st.markdown(
         """
         <style>
-        .stApp { background: linear-gradient(180deg, #f8fbff 0%, #edf2f7 100%); }
+        .stApp {
+            background:
+                radial-gradient(circle at top right, rgba(59,130,246,0.18), transparent 28%),
+                radial-gradient(circle at bottom left, rgba(16,185,129,0.12), transparent 26%),
+                linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%);
+            color: #e5eefb;
+        }
         .block-container { padding-top: 1.2rem; padding-bottom: 1.2rem; }
-        [data-testid="stSidebar"] { background: #111827; }
-        [data-testid="stSidebar"] * { color: #f9fafb; }
-        div[data-testid="stDataFrame"] { background: rgba(255,255,255,0.9); border-radius: 14px; }
-        h3 { color: #0f172a; margin-bottom: 0.3rem; }
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+            border-right: 1px solid rgba(148, 163, 184, 0.12);
+        }
+        [data-testid="stSidebar"] * { color: #f8fafc; }
+        [data-testid="stAppViewContainer"] h1,
+        [data-testid="stAppViewContainer"] h2,
+        [data-testid="stAppViewContainer"] h3,
+        [data-testid="stAppViewContainer"] label,
+        [data-testid="stAppViewContainer"] p,
+        [data-testid="stAppViewContainer"] span,
+        [data-testid="stAppViewContainer"] div {
+            color: #e5eefb;
+        }
+        [data-testid="stDataFrame"] {
+            background: rgba(15, 23, 42, 0.78);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 14px;
+        }
+        [data-testid="stMetricValue"] { color: #f8fafc; }
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 18px;
+            box-shadow: 0 20px 45px rgba(2, 6, 23, 0.28);
+        }
+        h3 { color: #f8fafc; margin-bottom: 0.3rem; }
         [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > div[data-testid="stVerticalBlock"] {
             gap: 0.65rem;
         }
+        .stCaption { color: #a8b3c7; }
         </style>
         """,
         unsafe_allow_html=True,

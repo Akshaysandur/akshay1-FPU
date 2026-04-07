@@ -220,7 +220,7 @@ class DashboardMQTTClient:
         queued_jobs = [job for job in self.state.jobs.values() if job.status == "Queued"]
         queued_jobs.sort(key=lambda item: (-item.priority, item.job_id))
         idle_amrs = [amr for amr in self.state.amrs.values() if amr.assigned_job_id is None]
-        idle_amrs.sort(key=lambda item: item.amr_id)
+        idle_amrs.sort(key=lambda item: (self._distance_to_station(item, "Loading"), item.amr_id))
         for job, amr in zip(queued_jobs, idle_amrs):
             self._assign_job(job, amr)
         self._sync_scheduler_queue()
@@ -390,6 +390,13 @@ class DashboardMQTTClient:
             offset_x, offset_y = AMR_DRAW_OFFSETS.get(amr_id, (0, 0))
             return base_x + offset_x, base_y + offset_y
         return base_x, base_y
+
+    def _distance_to_station(self, amr: AMRState, station: str) -> int:
+        start_node = amr.location if amr.location in PATH_GRAPH else self._nearest_location(amr.x, amr.y)
+        path = self._find_path(start_node, station)
+        if not path:
+            return 10**9
+        return max(len(path) - 1, 0)
 
     def _add_alert(self, severity: str, message: str) -> None:
         self.state.alerts.insert(0, AlertEvent(timestamp=datetime.now(), severity=severity, message=message))
