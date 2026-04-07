@@ -1,0 +1,6 @@
+streamlit>=1.34
+plotly>=5.20
+paho-mqtt>=2.1
+streamlit-autorefresh>=1.0.1
+pandas>=2.2
+Pillow>=10.3
