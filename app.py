@@ -129,26 +129,22 @@ def render_job_tracking(state, client: DashboardMQTTClient) -> None:
 
 
 def render_scheduler(state, client: DashboardMQTTClient) -> None:
-    st.subheader("Scheduler Panel")
-    left, right, control = st.columns([1.4, 1.4, 1])
-    with left:
-        st.write(f"Mode: **{state.scheduler.mode}**")
-        st.dataframe(pd.DataFrame(state.scheduler.queue or []), use_container_width=True, hide_index=True)
-    with right:
-        st.write("**AMR Task Allocation**")
-        st.dataframe(pd.DataFrame(state.scheduler.allocations or []), use_container_width=True, hide_index=True)
-    with control:
-        st.write("**Manual Override**")
-        amr_id = st.selectbox("AMR for Reassign", options=list(state.amrs.keys()), key="reassign_amr")
+    st.markdown("### Scheduler")
+    st.caption(f"Scheduling mode: {state.scheduler.mode}")
+    st.dataframe(pd.DataFrame(state.scheduler.queue or []), use_container_width=True, hide_index=True)
+    control_left, control_right = st.columns(2)
+    with control_left:
+        amr_id = st.selectbox("Assign to AMR", options=list(state.amrs.keys()), key="reassign_amr")
+    with control_right:
         job_options = list(state.jobs.keys()) or ["-"]
-        job_id = st.selectbox("Job for Reassign", options=job_options, key="reassign_job")
-        if st.button("Reassign Task", use_container_width=True):
-            client.publish_reassign(amr_id, job_id)
-            st.rerun()
+        job_id = st.selectbox("Select Job", options=job_options, key="reassign_job")
+    if st.button("Reassign Task", use_container_width=True):
+        client.publish_reassign(amr_id, job_id)
+        st.rerun()
 
 
 def render_amr_monitoring(state, client: DashboardMQTTClient) -> None:
-    st.subheader("AMR Monitoring")
+    st.markdown("### AMR Monitoring")
     rows = [
         {
             "AMR": amr.amr_id,
@@ -161,6 +157,7 @@ def render_amr_monitoring(state, client: DashboardMQTTClient) -> None:
         for amr in state.amrs.values()
     ]
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.caption("Manual control")
     amr_id = st.selectbox("Manual Control AMR", options=list(state.amrs.keys()), key="manual_amr")
     move_col, stop_col = st.columns(2)
     with move_col:
@@ -174,10 +171,24 @@ def render_amr_monitoring(state, client: DashboardMQTTClient) -> None:
 
 
 def render_alerts(state) -> None:
-    st.subheader("Alerts and Events")
+    st.markdown("### Alerts and Events")
     rows = [
         {"Time": alert.timestamp.strftime("%H:%M:%S"), "Severity": alert.severity, "Message": alert.message}
         for alert in state.alerts[:10]
+    ]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
+def render_comm_status(state) -> None:
+    st.markdown("### Communication")
+    rows = [
+        {"Metric": "Broker", "Value": f"{state.mqtt.broker}:{state.mqtt.port}"},
+        {"Metric": "Connection", "Value": "Connected" if state.mqtt.connected else "Simulation / Offline"},
+        {"Metric": "Message Rate", "Value": f"{state.mqtt.message_rate} msg/s"},
+        {
+            "Metric": "Last Update",
+            "Value": state.mqtt.last_update.strftime("%Y-%m-%d %H:%M:%S") if state.mqtt.last_update else "N/A",
+        },
     ]
     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
@@ -206,11 +217,15 @@ def main() -> None:
         [data-testid="stSidebar"] { background: #111827; }
         [data-testid="stSidebar"] * { color: #f9fafb; }
         div[data-testid="stDataFrame"] { background: rgba(255,255,255,0.9); border-radius: 14px; }
+        h3 { color: #0f172a; margin-bottom: 0.3rem; }
+        [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > div[data-testid="stVerticalBlock"] {
+            gap: 0.65rem;
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
-    st_autorefresh(interval=1000, key="dashboard_refresh")
+    st_autorefresh(interval=500, key="dashboard_refresh")
     st.title(APP_TITLE)
     st.caption("Unified job control, scheduler visibility, and AMR monitoring for fluid production.")
 
@@ -222,18 +237,28 @@ def main() -> None:
 
     top_left, top_right = st.columns([2.2, 1])
     with top_left:
-        st.subheader("Live Factory Visualization")
-        st.plotly_chart(build_factory_figure(state.amrs), use_container_width=True, config={"displayModeBar": False})
+        with st.container(border=True):
+            st.subheader("Live Factory Visualization")
+            st.plotly_chart(build_factory_figure(state.amrs), use_container_width=True, config={"displayModeBar": False})
     with top_right:
-        render_job_tracking(state, client)
+        with st.container(border=True):
+            render_job_tracking(state, client)
 
-    render_scheduler(state, client)
+    middle_left, middle_right = st.columns([1.25, 1])
+    with middle_left:
+        with st.container(border=True):
+            render_scheduler(state, client)
+    with middle_right:
+        with st.container(border=True):
+            render_amr_monitoring(state, client)
 
-    bottom_left, bottom_right = st.columns([1.5, 1])
-    with bottom_left:
-        render_amr_monitoring(state, client)
-    with bottom_right:
-        render_alerts(state)
+    lower_left, lower_right = st.columns([1.5, 1])
+    with lower_left:
+        with st.container(border=True):
+            render_alerts(state)
+    with lower_right:
+        with st.container(border=True):
+            render_comm_status(state)
 
     render_footer(state)
 

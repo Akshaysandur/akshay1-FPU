@@ -68,7 +68,7 @@ AMR_DRAW_OFFSETS = {
     "AMR-03": (0, 10),
 }
 
-AMR_SPEED_PX = 42.0
+AMR_SPEED_PX = 60.0
 
 PROCESS_TO_MACHINE = {
     "Painting": "Machine1",

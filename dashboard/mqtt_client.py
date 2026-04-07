@@ -198,9 +198,16 @@ class DashboardMQTTClient:
                 self._advance_amr(amr, dt)
             elif amr.assigned_job_id and not amr.route_nodes:
                 self._prepare_next_leg(amr)
+            elif amr.route_nodes:
+                self._advance_amr(amr, dt)
+            elif amr.location != "Loading":
+                amr.route_nodes = self._find_path(amr.location, "Loading")
+                amr.route_index = 1 if len(amr.route_nodes) > 1 else 0
+                amr.status = "Moving"
+                amr.current_task = "Returning to loading station"
             elif amr.status != "Idle":
                 amr.status = "Idle"
-                amr.current_task = "Waiting at loading station" if amr.location == "Loading" else f"Idle at {amr.location}"
+                amr.current_task = "Waiting at loading station"
         self._sync_scheduler_queue()
 
     def _nearest_location(self, x: float, y: float) -> str:
