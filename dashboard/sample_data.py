@@ -43,6 +43,15 @@ def build_initial_state() -> DashboardState:
             x=_loading_position("AMR-03")[0],
             y=_loading_position("AMR-03")[1],
         ),
+        "AMR-04": AMRState(
+            amr_id="AMR-04",
+            status="Idle",
+            battery=81,
+            current_task="Waiting at loading station",
+            location="Loading",
+            x=_loading_position("AMR-04")[0],
+            y=_loading_position("AMR-04")[1],
+        ),
     }
     state.active_jobs = 0
     state.system_state = "Running"

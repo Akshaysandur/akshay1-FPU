@@ -24,7 +24,7 @@ def build_factory_figure(amrs: dict[str, AMRState]) -> go.Figure:
                         x=[x0, x1],
                         y=[height - y0, height - y1],
                         mode="lines",
-                        line={"color": "rgba(31, 78, 121, 0.28)", "width": 5},
+                        line={"color": "rgba(239, 68, 68, 0.55)", "width": 6},
                         hoverinfo="skip",
                         showlegend=False,
                     )
