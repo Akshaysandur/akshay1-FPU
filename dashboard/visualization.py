@@ -5,7 +5,7 @@ from pathlib import Path
 import plotly.graph_objects as go
 from PIL import Image
 
-from dashboard.config import LAYOUT_IMAGE, PATH_COORDINATES, PATH_GRAPH, STATIONS
+from dashboard.config import LAYOUT_IMAGE, PATH_COORDINATES, PATH_OVERLAY, STATIONS
 from dashboard.models import AMRState
 
 
@@ -14,21 +14,19 @@ def build_factory_figure(amrs: dict[str, AMRState]) -> go.Figure:
     width, height = image.size
     fig = go.Figure()
 
-    for start, neighbors in PATH_GRAPH.items():
-        for neighbor in neighbors:
-            if start < neighbor:
-                x0, y0 = PATH_COORDINATES[start]
-                x1, y1 = PATH_COORDINATES[neighbor]
-                fig.add_trace(
-                    go.Scatter(
-                        x=[x0, x1],
-                        y=[height - y0, height - y1],
-                        mode="lines",
-                        line={"color": "rgba(239, 68, 68, 0.55)", "width": 6},
-                        hoverinfo="skip",
-                        showlegend=False,
-                    )
-                )
+    for path in PATH_OVERLAY:
+        x_points = [PATH_COORDINATES[node][0] for node in path]
+        y_points = [height - PATH_COORDINATES[node][1] for node in path]
+        fig.add_trace(
+            go.Scatter(
+                x=x_points,
+                y=y_points,
+                mode="lines",
+                line={"color": "rgba(220, 38, 38, 0.9)", "width": 8},
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
 
     fig.add_layout_image(
         dict(

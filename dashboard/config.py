@@ -74,6 +74,13 @@ PATH_COORDINATES = {
     "Machine3Drop": (355, 390),
 }
 
+PATH_OVERLAY = [
+    ["Loading", "LoadingTop", "TopWest", "Machine1Entry", "Machine1", "TopCenter", "Machine4Entry", "Machine4", "TopRightDrop", "SpineRight", "UnloadJoin", "Unloading"],
+    ["Loading", "LoadingDown", "SpineWest", "Machine2Drop", "Machine2Entry", "Machine2", "BottomCross", "Machine3Entry", "Machine3", "Machine3Drop", "SpineCenter", "SpineRight"],
+    ["SpineRight", "ChargeTurn", "Charging"],
+    ["Machine3Drop", "TopCenter"],
+]
+
 AMR_DRAW_OFFSETS = {
     "AMR-01": (-10, -8),
     "AMR-02": (10, -4),
