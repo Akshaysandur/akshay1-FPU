@@ -75,10 +75,10 @@ PATH_COORDINATES = {
 }
 
 PATH_OVERLAY = [
-    ["Loading", "LoadingTop", "TopWest", "Machine1Entry", "Machine1", "TopCenter", "Machine4Entry", "Machine4", "TopRightDrop", "SpineRight", "UnloadJoin", "Unloading"],
+    ["Loading", "LoadingTop", "TopWest", "Machine1Entry", "TopCenter", "Machine4Entry", "TopRightDrop", "SpineRight"],
     ["Loading", "LoadingDown", "SpineWest", "Machine2Drop", "Machine2Entry", "Machine2", "BottomCross", "Machine3Entry", "Machine3", "Machine3Drop", "SpineCenter", "SpineRight"],
+    ["SpineRight", "UnloadJoin", "Unloading"],
     ["SpineRight", "ChargeTurn", "Charging"],
-    ["Machine3Drop", "TopCenter"],
 ]
 
 AMR_DRAW_OFFSETS = {
