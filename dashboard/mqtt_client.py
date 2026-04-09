@@ -194,6 +194,15 @@ class DashboardMQTTClient:
             return
 
         for amr in self.state.amrs.values():
+            if amr.dwell_until and now < amr.dwell_until:
+                amr.status = "Processing"
+                amr.current_task = f"{amr.dwell_station}: processing"
+                continue
+            if amr.dwell_until and now >= amr.dwell_until:
+                amr.dwell_until = 0.0
+                amr.dwell_station = ""
+                self._prepare_next_leg(amr)
+                continue
             if amr.assigned_job_id and amr.route_nodes:
                 self._advance_amr(amr, dt)
             elif amr.assigned_job_id and not amr.route_nodes:
@@ -332,6 +341,13 @@ class DashboardMQTTClient:
             amr.current_task = f"{job.job_id}: picked up material at Loading"
         elif station in job.routing:
             job.current_step = job.routing.index(station)
+            if self._station_requires_dwell(station):
+                amr.status = "Processing"
+                amr.current_task = f"{job.job_id}: processing at {station}"
+                amr.dwell_station = station
+                amr.dwell_until = time.time() + 2.5
+                self._sync_scheduler_queue()
+                return
             amr.current_task = f"{job.job_id}: reached {station}"
         self._prepare_next_leg(amr)
 
@@ -397,6 +413,9 @@ class DashboardMQTTClient:
         if not path:
             return 10**9
         return max(len(path) - 1, 0)
+
+    def _station_requires_dwell(self, station: str) -> bool:
+        return station.startswith("Machine")
 
     def _add_alert(self, severity: str, message: str) -> None:
         self.state.alerts.insert(0, AlertEvent(timestamp=datetime.now(), severity=severity, message=message))

@@ -29,6 +29,8 @@ class AMRState:
     route_nodes: list[str] = field(default_factory=list)
     route_index: int = 0
     queued_stations: list[str] = field(default_factory=list)
+    dwell_until: float = 0.0
+    dwell_station: str = ""
 
 
 @dataclass
