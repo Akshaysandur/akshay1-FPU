@@ -23,6 +23,7 @@ class JobOrder:
     notes: str = ""
     status: str = "Queued"
     current_step_index: int = 0
+    queue_seconds_remaining: int = 0
     operations: list[OperationStep] = field(default_factory=list)
 
     def route_labels(self) -> list[str]:

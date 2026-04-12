@@ -47,6 +47,7 @@ def queue_summary(order: JobOrder) -> dict[str, object]:
         "Ops": len(order.operations),
         "Status": order.status,
         "Next Step": next_step(order),
+        "Queue Time": f"{order.queue_seconds_remaining}s",
     }
 
 
@@ -64,7 +65,11 @@ def advance_order(order: JobOrder) -> JobOrder:
     if order.current_step_index < len(order.operations):
         order.operations[order.current_step_index].status = "Done"
         order.current_step_index += 1
-        order.status = "Running" if order.current_step_index < len(order.operations) else "Unloading"
+        if order.current_step_index < len(order.operations):
+            order.status = "Running"
+        else:
+            order.status = "Unloading"
+            order.queue_seconds_remaining = 2
     else:
         order.status = "Completed"
     if order.status == "Completed":
@@ -77,9 +82,36 @@ def advance_order(order: JobOrder) -> JobOrder:
 def complete_order(order: JobOrder) -> JobOrder:
     order.status = "Completed"
     order.current_step_index = len(order.operations)
+    order.queue_seconds_remaining = 0
     for step in order.operations:
         step.status = "Done"
     return order
+
+
+def tick_scheduler(orders: list[JobOrder]) -> list[JobOrder]:
+    active_found = False
+    for order in sorted(orders, key=lambda item: (item.status != "Running", item.priority, item.created_at)):
+        if order.status in {"Completed", "Cancelled"}:
+            continue
+        if order.status == "Running" and not active_found:
+            active_found = True
+            if order.queue_seconds_remaining > 0:
+                order.queue_seconds_remaining -= 1
+            if order.queue_seconds_remaining == 0 and order.current_step_index < len(order.operations):
+                advance_order(order)
+            elif order.queue_seconds_remaining == 0 and order.current_step_index >= len(order.operations):
+                order.status = "Completed"
+        elif not active_found and order.status == "Queued":
+            order.status = "Running"
+            active_found = True
+            if order.queue_seconds_remaining == 0:
+                order.queue_seconds_remaining = 3
+        elif order.status == "Unloading":
+            if order.queue_seconds_remaining > 0:
+                order.queue_seconds_remaining -= 1
+            if order.queue_seconds_remaining == 0:
+                complete_order(order)
+    return orders
 
 
 def make_scheduler_state(mode: str, active_order_id: str = "") -> SchedulerState:

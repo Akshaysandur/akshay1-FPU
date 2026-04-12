@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 from mentor_scheduler.catalog import FMS_INFO, OPERATION_CATALOG
 from mentor_scheduler.models import JobOrder
-from mentor_scheduler.scheduler import advance_order, build_order, complete_order, next_step, queue_summary, sort_orders
+from mentor_scheduler.scheduler import advance_order, build_order, complete_order, next_step, queue_summary, sort_orders, tick_scheduler
 
 
 st.set_page_config(page_title="FPU Job Scheduler", layout="wide")
@@ -24,6 +25,12 @@ def init_state() -> None:
         st.session_state.next_order_no = 1
     if "order_locked" not in st.session_state:
         st.session_state.order_locked = False
+    if "tab_view" not in st.session_state:
+        st.session_state.tab_view = "Orders/Jobs"
+    if "reset_order_form" not in st.session_state:
+        st.session_state.reset_order_form = False
+    if "order_form_version" not in st.session_state:
+        st.session_state.order_form_version = 0
 
 
 def app_style() -> None:
@@ -90,11 +97,44 @@ def sidebar_controls() -> None:
     st.sidebar.write("Loading and unloading are treated as zero-time steps.")
     st.sidebar.divider()
     st.sidebar.caption("Simple scheduler for FPU order management.")
+    st.sidebar.subheader("Tabs")
+    st.session_state.tab_view = st.sidebar.radio(
+        "Navigation",
+        ["Orders/Jobs", "Scheduling", "Execution", "Catalog"],
+        label_visibility="collapsed",
+    )
 
 
 def render_order_builder() -> None:
     st.subheader("Add Order")
     left, right = st.columns([1.1, 0.9], gap="large")
+
+    if "order_form" not in st.session_state:
+        st.session_state.order_form = {
+            "order_id": f"ORD-{st.session_state.next_order_no:03d}",
+            "customer": "",
+            "item_name": "",
+            "due_date": "",
+            "notes": "",
+            "priority": 3,
+        }
+
+    if st.session_state.reset_order_form:
+        st.session_state.order_form = {
+            "order_id": f"ORD-{st.session_state.next_order_no:03d}",
+            "customer": "",
+            "item_name": "",
+            "due_date": "",
+            "notes": "",
+            "priority": 3,
+        }
+        st.session_state.draft_ops = []
+        st.session_state.order_locked = False
+        st.session_state.reset_order_form = False
+        st.session_state.order_form_version += 1
+
+    form = st.session_state.order_form
+    form_version = st.session_state.order_form_version
 
     with left:
         with st.container(border=True):
@@ -102,18 +142,18 @@ def render_order_builder() -> None:
             col1, col2 = st.columns(2)
             metadata_locked = st.session_state.order_locked
             with col1:
-                order_id = st.text_input("Order ID", value=f"ORD-{st.session_state.next_order_no:03d}", disabled=metadata_locked)
-                customer = st.text_input("Customer", placeholder="Customer name", disabled=metadata_locked)
-                priority = st.slider("Priority", 1, 5, 3, disabled=metadata_locked)
+                order_id = st.text_input("Order ID", value=form["order_id"], disabled=metadata_locked, key=f"order_id_input_{form_version}")
+                customer = st.text_input("Customer", placeholder="Customer name", value=form["customer"], disabled=metadata_locked, key=f"customer_input_{form_version}")
+                priority = st.slider("Priority", 1, 5, form["priority"], disabled=metadata_locked, key=f"priority_input_{form_version}")
             with col2:
-                item_name = st.text_input("Item / Job Name", placeholder="Part or product name", disabled=metadata_locked)
-                due_date = st.text_input("Due Date", placeholder="YYYY-MM-DD", disabled=metadata_locked)
-                notes = st.text_area("Notes", placeholder="Optional notes", height=110, disabled=metadata_locked)
+                item_name = st.text_input("Item / Job Name", placeholder="Part or product name", value=form["item_name"], disabled=metadata_locked, key=f"item_input_{form_version}")
+                due_date = st.text_input("Due Date", placeholder="YYYY-MM-DD", value=form["due_date"], disabled=metadata_locked, key=f"due_input_{form_version}")
+                notes = st.text_area("Notes", placeholder="Optional notes", value=form["notes"], height=110, disabled=metadata_locked, key=f"notes_input_{form_version}")
 
             st.markdown("**Operation Builder**")
             op_col, machine_col, time_col = st.columns([1.2, 1, 0.8])
             with op_col:
-                operation = st.selectbox("Operation", options=list(OPERATION_CATALOG.keys()), index=0, key="operation_picker")
+                operation = st.selectbox("Operation", options=list(OPERATION_CATALOG.keys()), index=0, key=f"operation_picker_{form_version}")
             with machine_col:
                 st.text_input("Machine", value=OPERATION_CATALOG[operation].machine, disabled=True)
             with time_col:
@@ -149,6 +189,7 @@ def render_order_builder() -> None:
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = False
                         st.session_state.next_order_no += 1
+                        st.session_state.reset_order_form = True
                         st.success(f"Order {new_order.order_id} added.")
                         st.rerun()
 
@@ -238,13 +279,15 @@ def render_scheduler_tab() -> None:
     with action_col:
         if st.button("Run Scheduler", use_container_width=True):
             ordered = sort_orders(st.session_state.orders, st.session_state.scheduler_mode)
-            st.session_state.selected_order = ordered[0].order_id
-            for order in st.session_state.orders:
-                if order.order_id == ordered[0].order_id:
-                    order.status = "Running"
-                elif order.status == "Queued":
-                    order.status = "Queued"
-            st.success(f"Next order: {ordered[0].order_id}")
+            for order in ordered:
+                if order.status == "Queued" and order.queue_seconds_remaining == 0:
+                    order.queue_seconds_remaining = max(2, len(order.operations) + 1)
+            if ordered:
+                st.session_state.selected_order = ordered[0].order_id
+                if ordered[0].status == "Queued":
+                    ordered[0].status = "Running"
+                    ordered[0].queue_seconds_remaining = max(2, len(ordered[0].operations))
+                st.success(f"Next order: {ordered[0].order_id}")
 
     queue_df = pd.DataFrame([queue_summary(order) for order in sort_orders(st.session_state.orders, st.session_state.scheduler_mode)])
     st.dataframe(queue_df, use_container_width=True, hide_index=True)
@@ -259,65 +302,91 @@ def render_execution_tab() -> None:
         st.info("No order selected.")
         return
 
-    selected_id = st.session_state.selected_order or st.session_state.orders[0].order_id
-    order = next(order for order in st.session_state.orders if order.order_id == selected_id)
+    tick_scheduler(st.session_state.orders)
+    active_orders = [order for order in sort_orders(st.session_state.orders, st.session_state.scheduler_mode) if order.status not in {"Completed", "Cancelled"}]
+    if not active_orders:
+        st.success("All orders are completed.")
+        return
 
-    col1, col2 = st.columns([1.1, 0.9])
-    with col1:
-        st.markdown("**Active Order**")
-        st.write(f"**Order ID:** {order.order_id}")
-        st.write(f"**Status:** {order.status}")
-        st.write(f"**Current Step:** {next_step(order)}")
-        progress = 0 if not order.operations else int((order.current_step_index / len(order.operations)) * 100)
-        st.progress(progress)
+    for index, order in enumerate(active_orders, start=1):
+        with st.container(border=True):
+            header_cols = st.columns([1.1, 0.9])
+            with header_cols[0]:
+                st.markdown(f"**{index}. Order {order.order_id}**")
+                st.write(f"Customer: {order.customer}")
+                st.write(f"Item: {order.item_name}")
+                st.write(f"Status: {order.status}")
+                st.write(f"Current Step: {next_step(order)}")
+                st.write(f"Queue Time Remaining: {order.queue_seconds_remaining}s")
+            with header_cols[1]:
+                progress = 0 if not order.operations else int((order.current_step_index / len(order.operations)) * 100)
+                st.progress(progress)
+                st.caption("Execution progress")
 
-        btn_prev, btn_next, btn_done = st.columns(3)
-        with btn_prev:
-            if st.button("Previous", use_container_width=True):
-                if order.current_step_index > 0:
-                    order.current_step_index -= 1
-                    order.operations[order.current_step_index].status = "Pending"
-                    order.status = "Running"
+            row_prev, row_adv, row_done = st.columns(3)
+            with row_prev:
+                if st.button("Previous", key=f"prev_{order.order_id}", use_container_width=True):
+                    if order.current_step_index > 0:
+                        order.current_step_index -= 1
+                        order.operations[order.current_step_index].status = "Pending"
+                        order.status = "Running"
+                        st.session_state.selected_order = order.order_id
+                        st.rerun()
+            with row_adv:
+                if st.button("Advance", key=f"advance_{order.order_id}", use_container_width=True):
+                    advance_order(order)
+                    st.session_state.selected_order = order.order_id
                     st.rerun()
-        with btn_next:
-            if st.button("Advance", use_container_width=True):
-                advance_order(order)
-                st.rerun()
-        with btn_done:
-            if st.button("Complete", use_container_width=True):
-                complete_order(order)
-                st.rerun()
+            with row_done:
+                if st.button("Complete", key=f"done_{order.order_id}", use_container_width=True):
+                    complete_order(order)
+                    remaining = [item for item in active_orders if item.order_id != order.order_id and item.status not in {"Completed", "Cancelled"}]
+                    if remaining:
+                        st.session_state.selected_order = remaining[0].order_id
+                        if remaining[0].status == "Queued":
+                            remaining[0].status = "Running"
+                            remaining[0].queue_seconds_remaining = max(2, len(remaining[0].operations))
+                    st.rerun()
 
-    with col2:
-        st.markdown("**Step List**")
-        rows = []
-        rows.append({"Seq": 0, "Step": "Loading", "Machine": "-", "Time (min)": 0, "Status": "Fixed"})
-        for step in order.operations:
-            rows.append({"Seq": len(rows), "Step": step.name, "Machine": step.machine, "Time (min)": step.minutes, "Status": step.status})
-        rows.append({"Seq": len(rows), "Step": "Unloading", "Machine": "-", "Time (min)": 0, "Status": "Fixed"})
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-
-
-def render_footer() -> None:
-    st.caption("FPU order scheduler. No visual factory map, only job management and execution flow.")
+            step_rows = [{"Seq": 0, "Step": "Loading", "Machine": "-", "Time (min)": 0, "Status": "Fixed"}]
+            for step_index, step in enumerate(order.operations, start=1):
+                step_rows.append(
+                    {
+                        "Seq": step_index,
+                        "Step": step.name,
+                        "Machine": step.machine,
+                        "Time (min)": step.minutes,
+                        "Status": step.status,
+                    }
+                )
+            step_rows.append(
+                {
+                    "Seq": len(order.operations) + 1,
+                    "Step": "Unloading",
+                    "Machine": "-",
+                    "Time (min)": 0,
+                    "Status": "Fixed",
+                }
+            )
+            st.dataframe(pd.DataFrame(step_rows), use_container_width=True, hide_index=True)
 
 
 def main() -> None:
     init_state()
     app_style()
+    st_autorefresh(interval=1000, key="fpu_refresh")
     header()
     sidebar_controls()
 
-    tab_orders, tab_scheduler, tab_execution, tab_catalog = st.tabs(["Orders/Jobs", "Scheduling", "Execution", "Catalog"])
-    with tab_orders:
+    if st.session_state.tab_view == "Orders/Jobs":
         render_order_builder()
         st.divider()
         render_order_list()
-    with tab_scheduler:
+    elif st.session_state.tab_view == "Scheduling":
         render_scheduler_tab()
-    with tab_execution:
+    elif st.session_state.tab_view == "Execution":
         render_execution_tab()
-    with tab_catalog:
+    else:
         st.subheader("FPU Basics")
         st.dataframe(
             pd.DataFrame([{"Item": key, "Value": value} for key, value in FMS_INFO.items()]),
@@ -325,8 +394,6 @@ def main() -> None:
             hide_index=True,
         )
         st.info("The interface keeps only the essential job entry, scheduling, and execution tracking.")
-
-    render_footer()
 
 
 if __name__ == "__main__":
