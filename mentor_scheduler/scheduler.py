@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from mentor_scheduler.catalog import OPERATION_CATALOG
+from mentor_scheduler.models import JobOrder, OperationStep, SchedulerState
+
+
+def build_operation(name: str) -> OperationStep:
+    template = OPERATION_CATALOG[name]
+    return OperationStep(name=template.name, machine=template.machine, minutes=template.minutes)
+
+
+def build_order(
+    order_id: str,
+    customer: str,
+    item_name: str,
+    priority: int,
+    due_date: str,
+    notes: str,
+    operations: list[str],
+) -> JobOrder:
+    return JobOrder(
+        order_id=order_id,
+        customer=customer,
+        item_name=item_name,
+        priority=priority,
+        due_date=due_date,
+        notes=notes,
+        created_at=datetime.now(),
+        operations=[build_operation(name) for name in operations],
+    )
+
+
+def sort_orders(orders: list[JobOrder], mode: str) -> list[JobOrder]:
+    if mode == "Static":
+        return sorted(orders, key=lambda item: item.order_id)
+    return sorted(orders, key=lambda item: (-item.priority, item.created_at, item.order_id))
+
+
+def queue_summary(order: JobOrder) -> dict[str, object]:
+    return {
+        "Order ID": order.order_id,
+        "Customer": order.customer,
+        "Item": order.item_name,
+        "Priority": order.priority,
+        "Ops": len(order.operations),
+        "Status": order.status,
+        "Next Step": next_step(order),
+    }
+
+
+def next_step(order: JobOrder) -> str:
+    if order.current_step_index < len(order.operations):
+        step = order.operations[order.current_step_index]
+        return f"{step.name} / {step.machine}"
+    return "Unloading"
+
+
+def advance_order(order: JobOrder) -> JobOrder:
+    if order.status in {"Completed", "Cancelled"}:
+        return order
+
+    if order.current_step_index < len(order.operations):
+        order.operations[order.current_step_index].status = "Done"
+        order.current_step_index += 1
+        order.status = "Running" if order.current_step_index < len(order.operations) else "Unloading"
+    else:
+        order.status = "Completed"
+    if order.status == "Completed":
+        for step in order.operations:
+            if step.status != "Done":
+                step.status = "Done"
+    return order
+
+
+def complete_order(order: JobOrder) -> JobOrder:
+    order.status = "Completed"
+    order.current_step_index = len(order.operations)
+    for step in order.operations:
+        step.status = "Done"
+    return order
+
+
+def make_scheduler_state(mode: str, active_order_id: str = "") -> SchedulerState:
+    return SchedulerState(mode=mode, last_run=datetime.now(), active_order_id=active_order_id)
