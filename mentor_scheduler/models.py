@@ -13,6 +13,12 @@ class OperationStep:
 
 
 @dataclass
+class DraftOperation:
+    name: str
+    minutes: int
+
+
+@dataclass
 class JobOrder:
     order_id: str
     customer: str

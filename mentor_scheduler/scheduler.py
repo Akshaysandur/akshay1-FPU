@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from mentor_scheduler.catalog import OPERATION_CATALOG
-from mentor_scheduler.models import JobOrder, OperationStep, SchedulerState
+from mentor_scheduler.models import DraftOperation, JobOrder, OperationStep, SchedulerState
 
 
-def build_operation(name: str) -> OperationStep:
+def build_operation(name: str, minutes: int | None = None) -> OperationStep:
     template = OPERATION_CATALOG[name]
-    return OperationStep(name=template.name, machine=template.machine, minutes=template.minutes)
+    return OperationStep(name=template.name, machine=template.machine, minutes=template.minutes if minutes is None else minutes)
 
 
 def build_order(
@@ -18,7 +18,7 @@ def build_order(
     priority: int,
     due_date: str,
     notes: str,
-    operations: list[str],
+    operations: list[DraftOperation],
 ) -> JobOrder:
     return JobOrder(
         order_id=order_id,
@@ -28,7 +28,7 @@ def build_order(
         due_date=due_date,
         notes=notes,
         created_at=datetime.now(),
-        operations=[build_operation(name) for name in operations],
+        operations=[build_operation(item.name, item.minutes) for item in operations],
     )
 
 
