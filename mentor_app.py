@@ -99,12 +99,26 @@ def app_style() -> None:
     st.markdown(
         """
         <style>
+        @keyframes floatGlow {
+            0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.72; }
+            50% { transform: translate3d(0, -8px, 0) scale(1.03); opacity: 1; }
+            100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.72; }
+        }
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 24%),
-                radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.08), transparent 24%),
-                linear-gradient(180deg, #050816 0%, #0b1020 45%, #111827 100%);
-            color: #e5eefb;
+                radial-gradient(circle at top left, rgba(250, 204, 21, 0.18), transparent 20%),
+                radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.18), transparent 18%),
+                radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.12), transparent 24%),
+                linear-gradient(180deg, #040614 0%, #09111f 50%, #0f172a 100%);
+            color: #f8fafc;
         }
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
@@ -118,30 +132,163 @@ def app_style() -> None:
             padding: 0.55rem 0.65rem;
             border-radius: 16px;
             border: 1px solid rgba(148, 163, 184, 0.12);
-            background: rgba(15, 23, 42, 0.75);
+            background: linear-gradient(90deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.82));
+            box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
         }
         [data-baseweb="tab"] {
-            background: rgba(255, 255, 255, 0.02);
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
             border-radius: 12px 12px 0 0;
-            color: #cbd5e1;
+            color: #dbeafe;
             font-weight: 700;
             padding: 0.5rem 0.9rem;
+            transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+        }
+        [data-baseweb="tab"]:hover {
+            transform: translateY(-1px);
+            color: #fff7cc;
         }
         [data-baseweb="tab"][aria-selected="true"] {
-            background: linear-gradient(180deg, rgba(59,130,246,0.32), rgba(59,130,246,0.14));
+            background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(59,130,246,0.18));
             color: #ffffff;
-            border-bottom: 2px solid #3b82f6;
+            border-bottom: 2px solid #facc15;
         }
         .block-container {
             padding-top: 1rem;
             padding-bottom: 1rem;
         }
-        .fpu-card {
+        .hero-shell {
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            padding: 1.15rem 1.35rem;
+            margin: 0.25rem 0 1rem;
+            border: 1px solid rgba(250, 204, 21, 0.18);
+            background:
+                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.82)),
+                radial-gradient(circle at top left, rgba(250, 204, 21, 0.14), transparent 30%);
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.3);
+            animation: riseIn 420ms ease;
+        }
+        .hero-shell::before,
+        .hero-shell::after {
+            content: "";
+            position: absolute;
+            border-radius: 999px;
+            filter: blur(4px);
+            pointer-events: none;
+        }
+        .hero-shell::before {
+            width: 220px;
+            height: 220px;
+            right: -70px;
+            top: -80px;
+            background: radial-gradient(circle, rgba(250,204,21,0.35), transparent 68%);
+            animation: floatGlow 6s ease-in-out infinite;
+        }
+        .hero-shell::after {
+            width: 180px;
+            height: 180px;
+            left: 42%;
+            bottom: -100px;
+            background: radial-gradient(circle, rgba(59,130,246,0.25), transparent 68%);
+            animation: floatGlow 7s ease-in-out infinite reverse;
+        }
+        .hero-kicker {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #facc15, #fb7185);
+            color: #09111f;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            font-size: 0.74rem;
+            text-transform: uppercase;
+        }
+        .hero-title {
+            font-size: clamp(2rem, 3vw, 3rem);
+            line-height: 1.05;
+            font-weight: 900;
+            margin-top: 0.65rem;
+            margin-bottom: 0.45rem;
+            background: linear-gradient(90deg, #ffffff, #fde68a, #93c5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 10s linear infinite alternate;
+            background-size: 200% 200%;
+        }
+        .hero-subtitle {
+            max-width: 64ch;
+            color: #cbd5e1;
+            font-size: 0.98rem;
+            margin-bottom: 0.9rem;
+        }
+        .hero-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+        }
+        .hero-pill {
+            padding: 0.38rem 0.75rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #f8fafc;
+            font-size: 0.83rem;
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            border-radius: 18px;
+            padding: 0.9rem 1rem;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
+            box-shadow: 0 14px 28px rgba(2, 6, 23, 0.22);
+            animation: riseIn 420ms ease;
+            transition: transform 180ms ease, box-shadow 180ms ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 36px rgba(2, 6, 23, 0.34);
+        }
+        .stat-accent-yellow {
+            border-color: rgba(250,204,21,0.35);
+            box-shadow: inset 0 0 0 1px rgba(250,204,21,0.08), 0 14px 28px rgba(250,204,21,0.06);
+        }
+        .stat-accent-blue {
+            border-color: rgba(59,130,246,0.35);
+        }
+        .stat-accent-pink {
+            border-color: rgba(244,114,182,0.3);
+        }
+        .stat-label {
+            color: #cbd5e1;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.35rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #ffffff;
+        }
+        .stat-foot {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            margin-top: 0.2rem;
+        }
+        .panel-card {
             background: rgba(15, 23, 42, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.16);
             border-radius: 18px;
             padding: 1rem 1.1rem;
             box-shadow: 0 18px 36px rgba(2, 6, 23, 0.25);
+            animation: riseIn 360ms ease;
         }
         .fpu-muted {
             color: #aeb9ca;
@@ -158,6 +305,43 @@ def app_style() -> None:
             background: rgba(15, 23, 42, 0.8);
             border-radius: 14px;
         }
+        div[data-testid="stButton"] button {
+            border: 1px solid rgba(250, 204, 21, 0.28);
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.98), rgba(251, 146, 60, 0.92));
+            color: #09111f;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(250, 204, 21, 0.2);
+            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+        }
+        div[data-testid="stButton"] button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.06);
+            box-shadow: 0 14px 26px rgba(250, 204, 21, 0.28);
+        }
+        div[data-testid="stButton"] button[kind="secondary"] {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
+            color: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: none;
+        }
+        div[data-testid="stTextInput"] input,
+        div[data-testid="stTextArea"] textarea,
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="input"] > div,
+        div[data-testid="stNumberInput"] input {
+            background-color: rgba(15, 23, 42, 0.92) !important;
+            color: #f8fafc !important;
+            border-color: rgba(148, 163, 184, 0.18) !important;
+            border-radius: 14px !important;
+        }
+        div[data-baseweb="select"] > div:hover,
+        div[data-testid="stTextInput"] input:focus,
+        div[data-testid="stTextArea"] textarea:focus,
+        div[data-testid="stNumberInput"] input:focus {
+            border-color: rgba(250, 204, 21, 0.55) !important;
+            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.2) !important;
+        }
         [data-testid="stHorizontalBlock"] > div > div {
             gap: 0.75rem;
         }
@@ -168,7 +352,59 @@ def app_style() -> None:
 
 
 def header() -> None:
-    st.title("FPU Job Scheduler")
+    st.markdown(
+        """
+        <div class="hero-shell">
+            <div class="hero-kicker">FPU Job Scheduler</div>
+            <div class="hero-title">Bright, tactile, and built for fast job control.</div>
+            <div class="hero-subtitle">
+                Manage orders, tune operation times, and watch the queue progress with a more colorful control-room feel.
+            </div>
+            <div class="hero-pills">
+                <span class="hero-pill">Live queue</span>
+                <span class="hero-pill">Editable operation times</span>
+                <span class="hero-pill">Step execution</span>
+                <span class="hero-pill">Dark neon workflow</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_summary_strip() -> None:
+    total_orders = len(st.session_state.orders)
+    active_orders = len([order for order in st.session_state.orders if order.status not in {"Completed", "Cancelled"}])
+    focus_order = st.session_state.execution_focus_order or st.session_state.selected_order or "None"
+    utc_stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    st.markdown(
+        f"""
+        <div class="stat-grid">
+            <div class="stat-card stat-accent-yellow">
+                <div class="stat-label">Orders</div>
+                <div class="stat-value">{total_orders}</div>
+                <div class="stat-foot">Created in this session</div>
+            </div>
+            <div class="stat-card stat-accent-blue">
+                <div class="stat-label">Active Jobs</div>
+                <div class="stat-value">{active_orders}</div>
+                <div class="stat-foot">Waiting or running now</div>
+            </div>
+            <div class="stat-card stat-accent-pink">
+                <div class="stat-label">Focused Job</div>
+                <div class="stat-value">{focus_order}</div>
+                <div class="stat-foot">Execution tab selection</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">UTC Clock</div>
+                <div class="stat-value" style="font-size:1.05rem;">{utc_stamp}</div>
+                <div class="stat-foot">Auto-filled due date source</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def sidebar_controls() -> None:
@@ -464,6 +700,7 @@ def main() -> None:
     app_style()
     st_autorefresh(interval=1000, key="fpu_refresh")
     header()
+    render_summary_strip()
     sidebar_controls()
 
     tabs = st.tabs(["Orders/Jobs", "Scheduling", "Execution", "Catalog"])
