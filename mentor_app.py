@@ -108,10 +108,6 @@ def app_style() -> None:
             0% { background-position: 0% 50%; }
             100% { background-position: 100% 50%; }
         }
-        @keyframes riseIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         .stApp {
             background:
                 radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 22%),
@@ -157,86 +153,6 @@ def app_style() -> None:
             padding-top: 1rem;
             padding-bottom: 1rem;
         }
-        .hero-shell {
-            position: relative;
-            overflow: hidden;
-            border-radius: 24px;
-            padding: 1.15rem 1.35rem;
-            margin: 0.25rem 0 1rem;
-            border: 1px solid rgba(196, 144, 0, 0.18);
-            background:
-                linear-gradient(135deg, rgba(255, 250, 224, 0.96), rgba(255, 239, 170, 0.92)),
-                radial-gradient(circle at top left, rgba(255, 221, 77, 0.22), transparent 30%);
-            box-shadow: 0 18px 40px rgba(172, 131, 0, 0.16);
-            animation: riseIn 420ms ease;
-        }
-        .hero-shell::before,
-        .hero-shell::after {
-            content: "";
-            position: absolute;
-            border-radius: 999px;
-            filter: blur(4px);
-            pointer-events: none;
-        }
-        .hero-shell::before {
-            width: 220px;
-            height: 220px;
-            right: -70px;
-            top: -80px;
-            background: radial-gradient(circle, rgba(255,214,10,0.42), transparent 68%);
-            animation: floatGlow 6s ease-in-out infinite;
-        }
-        .hero-shell::after {
-            width: 180px;
-            height: 180px;
-            left: 42%;
-            bottom: -100px;
-            background: radial-gradient(circle, rgba(255,182,0,0.28), transparent 68%);
-            animation: floatGlow 7s ease-in-out infinite reverse;
-        }
-        .hero-kicker {
-            display: inline-block;
-            padding: 0.25rem 0.7rem;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #ffe066, #ffd43b);
-            color: #5c4300;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            font-size: 0.74rem;
-            text-transform: uppercase;
-        }
-        .hero-title {
-            font-size: clamp(2rem, 3vw, 3rem);
-            line-height: 1.05;
-            font-weight: 900;
-            margin-top: 0.65rem;
-            margin-bottom: 0.45rem;
-            background: linear-gradient(90deg, #8a5b00, #d97706, #f59e0b, #8a5b00);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            animation: shimmer 10s linear infinite alternate;
-            background-size: 200% 200%;
-        }
-        .hero-subtitle {
-            max-width: 64ch;
-            color: #6b5a1c;
-            font-size: 0.98rem;
-            margin-bottom: 0.9rem;
-        }
-        .hero-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.55rem;
-        }
-        .hero-pill {
-            padding: 0.38rem 0.75rem;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.45);
-            border: 1px solid rgba(180, 138, 0, 0.14);
-            color: #4b3600;
-            font-size: 0.83rem;
-        }
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -249,7 +165,6 @@ def app_style() -> None:
             border: 1px solid rgba(180, 138, 0, 0.14);
             background: linear-gradient(135deg, rgba(255, 251, 232, 0.96), rgba(255, 239, 170, 0.92));
             box-shadow: 0 14px 28px rgba(172, 131, 0, 0.12);
-            animation: riseIn 420ms ease;
             transition: transform 180ms ease, box-shadow 180ms ease;
         }
         .stat-card:hover {
@@ -282,14 +197,6 @@ def app_style() -> None:
             color: #6b5a1c;
             font-size: 0.82rem;
             margin-top: 0.2rem;
-        }
-        .panel-card {
-            background: rgba(255, 250, 224, 0.82);
-            border: 1px solid rgba(180, 138, 0, 0.12);
-            border-radius: 18px;
-            padding: 1rem 1.1rem;
-            box-shadow: 0 18px 36px rgba(172, 131, 0, 0.12);
-            animation: riseIn 360ms ease;
         }
         .fpu-muted {
             color: #6b5a1c;
@@ -347,27 +254,6 @@ def app_style() -> None:
             gap: 0.75rem;
         }
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def header() -> None:
-    st.markdown(
-        """
-        <div class="hero-shell">
-            <div class="hero-kicker">FPU Job Scheduler</div>
-            <div class="hero-title">Bright, tactile, and built for fast job control.</div>
-            <div class="hero-subtitle">
-                Manage orders, tune operation times, and watch the queue progress with a more colorful control-room feel.
-            </div>
-            <div class="hero-pills">
-                <span class="hero-pill">Live queue</span>
-                <span class="hero-pill">Editable operation times</span>
-                <span class="hero-pill">Step execution</span>
-                <span class="hero-pill">Dark neon workflow</span>
-            </div>
-        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -700,12 +586,11 @@ def main() -> None:
     init_state()
     app_style()
     st_autorefresh(interval=1000, key="fpu_refresh")
-    header()
-    render_summary_strip()
     sidebar_controls()
 
     tabs = st.tabs(["Orders/Jobs", "Scheduling", "Execution", "Catalog"])
     with tabs[0]:
+        render_summary_strip()
         render_order_builder()
         st.divider()
         render_order_list()
