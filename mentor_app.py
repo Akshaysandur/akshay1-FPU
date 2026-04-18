@@ -114,43 +114,44 @@ def app_style() -> None:
         }
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(250, 204, 21, 0.18), transparent 20%),
-                radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.18), transparent 18%),
-                radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.12), transparent 24%),
-                linear-gradient(180deg, #040614 0%, #09111f 50%, #0f172a 100%);
-            color: #f8fafc;
+                radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 22%),
+                radial-gradient(circle at 15% 10%, rgba(255, 244, 179, 0.55), transparent 18%),
+                radial-gradient(circle at 85% 18%, rgba(255, 225, 102, 0.42), transparent 20%),
+                radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.22), transparent 26%),
+                linear-gradient(180deg, #fff9df 0%, #fff1b8 34%, #ffe78c 62%, #ffd95a 100%);
+            color: #1f2937;
         }
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
-            border-right: 1px solid rgba(148, 163, 184, 0.12);
+            background: linear-gradient(180deg, #fff8df 0%, #ffeeb0 100%);
+            border-right: 1px solid rgba(180, 138, 0, 0.16);
         }
         [data-testid="stSidebar"] * {
-            color: #f8fafc;
+            color: #2f2a18;
         }
         [data-baseweb="tab-list"] {
             gap: 0.4rem;
             padding: 0.55rem 0.65rem;
             border-radius: 16px;
-            border: 1px solid rgba(148, 163, 184, 0.12);
-            background: linear-gradient(90deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.82));
-            box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
+            border: 1px solid rgba(180, 138, 0, 0.12);
+            background: linear-gradient(90deg, rgba(255, 248, 220, 0.88), rgba(255, 237, 160, 0.92));
+            box-shadow: 0 18px 34px rgba(172, 131, 0, 0.16);
         }
         [data-baseweb="tab"] {
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            background: linear-gradient(180deg, rgba(255,255,255,0.44), rgba(255,255,255,0.2));
             border-radius: 12px 12px 0 0;
-            color: #dbeafe;
+            color: #7c5e00;
             font-weight: 700;
             padding: 0.5rem 0.9rem;
             transition: transform 180ms ease, background 180ms ease, color 180ms ease;
         }
         [data-baseweb="tab"]:hover {
             transform: translateY(-1px);
-            color: #fff7cc;
+            color: #5b4300;
         }
         [data-baseweb="tab"][aria-selected="true"] {
-            background: linear-gradient(180deg, rgba(250,204,21,0.28), rgba(59,130,246,0.18));
-            color: #ffffff;
-            border-bottom: 2px solid #facc15;
+            background: linear-gradient(180deg, rgba(255, 223, 92, 0.88), rgba(255, 191, 36, 0.96));
+            color: #2f2200;
+            border-bottom: 2px solid #d97706;
         }
         .block-container {
             padding-top: 1rem;
@@ -162,11 +163,11 @@ def app_style() -> None:
             border-radius: 24px;
             padding: 1.15rem 1.35rem;
             margin: 0.25rem 0 1rem;
-            border: 1px solid rgba(250, 204, 21, 0.18);
+            border: 1px solid rgba(196, 144, 0, 0.18);
             background:
-                linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.82)),
-                radial-gradient(circle at top left, rgba(250, 204, 21, 0.14), transparent 30%);
-            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.3);
+                linear-gradient(135deg, rgba(255, 250, 224, 0.96), rgba(255, 239, 170, 0.92)),
+                radial-gradient(circle at top left, rgba(255, 221, 77, 0.22), transparent 30%);
+            box-shadow: 0 18px 40px rgba(172, 131, 0, 0.16);
             animation: riseIn 420ms ease;
         }
         .hero-shell::before,
@@ -182,7 +183,7 @@ def app_style() -> None:
             height: 220px;
             right: -70px;
             top: -80px;
-            background: radial-gradient(circle, rgba(250,204,21,0.35), transparent 68%);
+            background: radial-gradient(circle, rgba(255,214,10,0.42), transparent 68%);
             animation: floatGlow 6s ease-in-out infinite;
         }
         .hero-shell::after {
@@ -190,15 +191,15 @@ def app_style() -> None:
             height: 180px;
             left: 42%;
             bottom: -100px;
-            background: radial-gradient(circle, rgba(59,130,246,0.25), transparent 68%);
+            background: radial-gradient(circle, rgba(255,182,0,0.28), transparent 68%);
             animation: floatGlow 7s ease-in-out infinite reverse;
         }
         .hero-kicker {
             display: inline-block;
             padding: 0.25rem 0.7rem;
             border-radius: 999px;
-            background: linear-gradient(90deg, #facc15, #fb7185);
-            color: #09111f;
+            background: linear-gradient(90deg, #ffe066, #ffd43b);
+            color: #5c4300;
             font-weight: 800;
             letter-spacing: 0.04em;
             font-size: 0.74rem;
@@ -210,7 +211,7 @@ def app_style() -> None:
             font-weight: 900;
             margin-top: 0.65rem;
             margin-bottom: 0.45rem;
-            background: linear-gradient(90deg, #ffffff, #fde68a, #93c5fd);
+            background: linear-gradient(90deg, #8a5b00, #d97706, #f59e0b, #8a5b00);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -219,7 +220,7 @@ def app_style() -> None:
         }
         .hero-subtitle {
             max-width: 64ch;
-            color: #cbd5e1;
+            color: #6b5a1c;
             font-size: 0.98rem;
             margin-bottom: 0.9rem;
         }
@@ -231,9 +232,9 @@ def app_style() -> None:
         .hero-pill {
             padding: 0.38rem 0.75rem;
             border-radius: 999px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #f8fafc;
+            background: rgba(255,255,255,0.45);
+            border: 1px solid rgba(180, 138, 0, 0.14);
+            color: #4b3600;
             font-size: 0.83rem;
         }
         .stat-grid {
@@ -245,9 +246,9 @@ def app_style() -> None:
         .stat-card {
             border-radius: 18px;
             padding: 0.9rem 1rem;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9));
-            box-shadow: 0 14px 28px rgba(2, 6, 23, 0.22);
+            border: 1px solid rgba(180, 138, 0, 0.14);
+            background: linear-gradient(135deg, rgba(255, 251, 232, 0.96), rgba(255, 239, 170, 0.92));
+            box-shadow: 0 14px 28px rgba(172, 131, 0, 0.12);
             animation: riseIn 420ms ease;
             transition: transform 180ms ease, box-shadow 180ms ease;
         }
@@ -266,7 +267,7 @@ def app_style() -> None:
             border-color: rgba(244,114,182,0.3);
         }
         .stat-label {
-            color: #cbd5e1;
+            color: #8a6b16;
             font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -275,54 +276,54 @@ def app_style() -> None:
         .stat-value {
             font-size: 1.5rem;
             font-weight: 900;
-            color: #ffffff;
+            color: #3b2a00;
         }
         .stat-foot {
-            color: #94a3b8;
+            color: #6b5a1c;
             font-size: 0.82rem;
             margin-top: 0.2rem;
         }
         .panel-card {
-            background: rgba(15, 23, 42, 0.82);
-            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: rgba(255, 250, 224, 0.82);
+            border: 1px solid rgba(180, 138, 0, 0.12);
             border-radius: 18px;
             padding: 1rem 1.1rem;
-            box-shadow: 0 18px 36px rgba(2, 6, 23, 0.25);
+            box-shadow: 0 18px 36px rgba(172, 131, 0, 0.12);
             animation: riseIn 360ms ease;
         }
         .fpu-muted {
-            color: #aeb9ca;
+            color: #6b5a1c;
             font-size: 0.92rem;
         }
         .fpu-route {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
             line-height: 1.6;
             white-space: pre-wrap;
-            color: #e5eefb;
+            color: #3b2a00;
         }
-        h1, h2, h3, h4, p, label, span, div { color: #e5eefb; }
+        h1, h2, h3, h4, p, label, span, div { color: #2f2a18; }
         .stDataFrame, [data-testid="stDataFrame"] {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(255, 250, 224, 0.9);
             border-radius: 14px;
         }
         div[data-testid="stButton"] button {
-            border: 1px solid rgba(250, 204, 21, 0.28);
+            border: 1px solid rgba(180, 138, 0, 0.2);
             border-radius: 14px;
-            background: linear-gradient(135deg, rgba(250, 204, 21, 0.98), rgba(251, 146, 60, 0.92));
-            color: #09111f;
+            background: linear-gradient(135deg, rgba(255, 225, 87, 0.98), rgba(255, 189, 67, 0.95));
+            color: #3b2a00;
             font-weight: 900;
-            box-shadow: 0 10px 20px rgba(250, 204, 21, 0.2);
+            box-shadow: 0 10px 20px rgba(172, 131, 0, 0.14);
             transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
         }
         div[data-testid="stButton"] button:hover {
             transform: translateY(-2px);
             filter: brightness(1.06);
-            box-shadow: 0 14px 26px rgba(250, 204, 21, 0.28);
+            box-shadow: 0 14px 26px rgba(172, 131, 0, 0.22);
         }
         div[data-testid="stButton"] button[kind="secondary"] {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.96), rgba(15, 23, 42, 0.96));
-            color: #f8fafc;
-            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: linear-gradient(135deg, rgba(255, 250, 224, 0.98), rgba(255, 241, 188, 0.98));
+            color: #3b2a00;
+            border: 1px solid rgba(180, 138, 0, 0.18);
             box-shadow: none;
         }
         div[data-testid="stTextInput"] input,
@@ -330,17 +331,17 @@ def app_style() -> None:
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div,
         div[data-testid="stNumberInput"] input {
-            background-color: rgba(15, 23, 42, 0.92) !important;
-            color: #f8fafc !important;
-            border-color: rgba(148, 163, 184, 0.18) !important;
+            background-color: rgba(255, 251, 234, 0.96) !important;
+            color: #3b2a00 !important;
+            border-color: rgba(180, 138, 0, 0.18) !important;
             border-radius: 14px !important;
         }
         div[data-baseweb="select"] > div:hover,
         div[data-testid="stTextInput"] input:focus,
         div[data-testid="stTextArea"] textarea:focus,
         div[data-testid="stNumberInput"] input:focus {
-            border-color: rgba(250, 204, 21, 0.55) !important;
-            box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.2) !important;
+            border-color: rgba(217, 119, 6, 0.55) !important;
+            box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.2) !important;
         }
         [data-testid="stHorizontalBlock"] > div > div {
             gap: 0.75rem;
