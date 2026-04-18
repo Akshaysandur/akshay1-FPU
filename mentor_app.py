@@ -414,6 +414,7 @@ def render_order_builder() -> None:
                     if not st.session_state.customer_field or not st.session_state.item_name_field or not st.session_state.draft_ops:
                         st.warning("Fill metadata and add at least one operation before finishing.")
                     else:
+                        operations_payload = list(st.session_state.draft_ops)
                         new_order = build_order(
                             order_id=st.session_state.order_id_field,
                             customer=st.session_state.customer_field,
@@ -421,9 +422,9 @@ def render_order_builder() -> None:
                             priority=int(st.session_state.priority_field),
                             due_date=st.session_state.due_date_field,
                             notes=st.session_state.notes_field,
-                            operations=st.session_state.draft_ops,
+                            operations=operations_payload,
                         )
-                        st.session_state.orders.append(new_order)
+                        st.session_state.orders = [*st.session_state.orders, new_order]
                         st.session_state.selected_order = new_order.order_id
                         st.session_state.execution_focus_order = new_order.order_id
                         st.session_state.next_order_no += 1
@@ -431,6 +432,7 @@ def render_order_builder() -> None:
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = True
                         sync_operation_defaults()
+                        st.session_state.last_finished_order = new_order.order_id
                         st.success(f"Order {new_order.order_id} added.")
                         st.rerun()
 
