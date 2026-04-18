@@ -29,8 +29,9 @@ def sync_order_id() -> None:
 def sync_operation_defaults() -> None:
     first_name = first_operation_name()
     st.session_state.operation_picker = first_name
-    st.session_state.operation_last_name = first_name
-    st.session_state.operation_minutes = OPERATION_CATALOG[first_name].minutes
+    st.session_state.operation_minutes_by_name = {
+        name: template.minutes for name, template in OPERATION_CATALOG.items()
+    }
 
 
 def reset_metadata(clear_metadata: bool) -> None:
@@ -88,10 +89,10 @@ def init_state() -> None:
         st.session_state.priority_field = 3
     if "operation_picker" not in st.session_state:
         sync_operation_defaults()
-    if "operation_minutes" not in st.session_state:
-        st.session_state.operation_minutes = OPERATION_CATALOG[st.session_state.operation_picker].minutes
-    if "operation_last_name" not in st.session_state:
-        st.session_state.operation_last_name = st.session_state.operation_picker
+    if "operation_minutes_by_name" not in st.session_state:
+        st.session_state.operation_minutes_by_name = {
+            name: template.minutes for name, template in OPERATION_CATALOG.items()
+        }
     sync_order_id()
 
 
@@ -344,28 +345,28 @@ def render_order_builder() -> None:
                     index=operation_names.index(st.session_state.operation_picker),
                     key="operation_picker",
                 )
-            if st.session_state.operation_last_name != current_operation:
-                st.session_state.operation_last_name = current_operation
-                st.session_state.operation_minutes = OPERATION_CATALOG[current_operation].minutes
+            if current_operation not in st.session_state.operation_minutes_by_name:
+                st.session_state.operation_minutes_by_name[current_operation] = OPERATION_CATALOG[current_operation].minutes
+            current_minutes = int(st.session_state.operation_minutes_by_name[current_operation])
             with machine_col:
                 st.text_input("Machine", value=OPERATION_CATALOG[current_operation].machine, disabled=True)
             with time_col:
                 st.markdown("**Time (min)**")
                 arrow_col, value_col, arrow_col_down = st.columns([0.55, 1.1, 0.55], gap="small")
                 with arrow_col:
-                    if st.button("▲", key=f"time_up_{current_operation}", use_container_width=True):
-                        st.session_state.operation_minutes = min(99, int(st.session_state.operation_minutes) + 1)
+                    if st.button("?", key=f"time_up_{current_operation}", use_container_width=True):
+                        st.session_state.operation_minutes_by_name[current_operation] = min(99, current_minutes + 1)
                         st.rerun()
                 with value_col:
                     st.text_input(
                         label="Time Value",
-                        value=f"{int(st.session_state.operation_minutes)} min",
+                        value=f"{int(st.session_state.operation_minutes_by_name[current_operation])} min",
                         disabled=True,
                         label_visibility="collapsed",
                     )
                 with arrow_col_down:
-                    if st.button("▼", key=f"time_down_{current_operation}", use_container_width=True):
-                        st.session_state.operation_minutes = max(1, int(st.session_state.operation_minutes) - 1)
+                    if st.button("?", key=f"time_down_{current_operation}", use_container_width=True):
+                        st.session_state.operation_minutes_by_name[current_operation] = max(1, current_minutes - 1)
                         st.rerun()
 
             btn_add, btn_clear, btn_finish = st.columns(3)
@@ -374,7 +375,7 @@ def render_order_builder() -> None:
                     st.session_state.draft_ops.append(
                         DraftOperation(
                             name=current_operation,
-                            minutes=int(st.session_state.operation_minutes),
+                            minutes=int(st.session_state.operation_minutes_by_name[current_operation]),
                         )
                     )
                     st.session_state.order_locked = True
@@ -627,3 +628,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
