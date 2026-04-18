@@ -257,6 +257,27 @@ def app_style() -> None:
             color: #8a6b16 !important;
             opacity: 0.95 !important;
         }
+        div[data-baseweb="popover"] {
+            background: #fff7d6 !important;
+            border: 1px solid rgba(180, 138, 0, 0.18) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 20px 40px rgba(172, 131, 0, 0.18) !important;
+        }
+        div[data-baseweb="popover"] [role="option"],
+        div[data-baseweb="popover"] li,
+        div[data-baseweb="popover"] span {
+            color: #3b2a00 !important;
+            background: transparent !important;
+        }
+        div[data-baseweb="popover"] [aria-selected="true"],
+        div[data-baseweb="popover"] [aria-selected="true"] * {
+            color: #2f2200 !important;
+            background: rgba(255, 223, 92, 0.45) !important;
+        }
+        div[data-baseweb="popover"] [role="option"]:hover {
+            background: rgba(255, 214, 51, 0.35) !important;
+            color: #2f2200 !important;
+        }
         div[data-baseweb="select"] > div:hover,
         div[data-testid="stTextInput"] input:focus,
         div[data-testid="stTextArea"] textarea:focus,
