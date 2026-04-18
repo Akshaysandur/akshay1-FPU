@@ -22,10 +22,6 @@ def first_operation_name() -> str:
     return next(iter(OPERATION_CATALOG))
 
 
-def sync_order_id() -> None:
-    st.session_state.order_id_field = f"ORD-{st.session_state.next_order_no:03d}"
-
-
 def sync_operation_defaults() -> None:
     first_name = first_operation_name()
     st.session_state.operation_picker = first_name
@@ -93,9 +89,6 @@ def init_state() -> None:
         st.session_state.operation_minutes_by_name = {
             name: template.minutes for name, template in OPERATION_CATALOG.items()
         }
-    sync_order_id()
-
-
 def app_style() -> None:
     st.markdown(
         """
@@ -344,6 +337,7 @@ def sidebar_controls() -> None:
 
 def render_order_builder() -> None:
     st.subheader("Add Order")
+    st.session_state.order_id_field = f"ORD-{st.session_state.next_order_no:03d}"
     left, right = st.columns([1.1, 0.9], gap="large")
 
     with left:
@@ -428,7 +422,6 @@ def render_order_builder() -> None:
                         st.session_state.selected_order = new_order.order_id
                         st.session_state.execution_focus_order = new_order.order_id
                         st.session_state.next_order_no += 1
-                        sync_order_id()
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = True
                         sync_operation_defaults()
