@@ -278,6 +278,10 @@ def app_style() -> None:
             background: rgba(255, 214, 51, 0.35) !important;
             color: #2f2200 !important;
         }
+        div[data-testid="stDataFrame"] input[type="checkbox"],
+        div[data-testid="stDataFrame"] label[role="checkbox"] {
+            display: none !important;
+        }
         div[data-baseweb="select"] > div:hover,
         div[data-testid="stTextInput"] input:focus,
         div[data-testid="stTextArea"] textarea:focus,
@@ -403,7 +407,7 @@ def render_order_builder() -> None:
                     st.rerun()
             with btn_clear:
                 if st.button("Clear Draft", use_container_width=True):
-                    reset_metadata(clear_metadata=True)
+                    reset_metadata(clear_metadata=False)
                     st.rerun()
             with btn_finish:
                 if st.button("Finish Order", use_container_width=True, type="primary"):
@@ -484,8 +488,8 @@ def render_order_list() -> None:
     elif st.session_state.selected_order in [order.order_id for order in orders]:
         chosen = st.session_state.selected_order
     else:
-        chosen = orders[0].order_id
-        st.session_state.selected_order = chosen
+        st.info("Click a row in the table to view order details below.")
+        return
 
     selected = next(order for order in orders if order.order_id == chosen)
 
