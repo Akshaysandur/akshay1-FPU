@@ -240,8 +240,21 @@ def app_style() -> None:
         div[data-testid="stNumberInput"] input {
             background-color: rgba(255, 251, 234, 0.96) !important;
             color: #3b2a00 !important;
+            -webkit-text-fill-color: #3b2a00 !important;
             border-color: rgba(180, 138, 0, 0.18) !important;
             border-radius: 14px !important;
+        }
+        div[data-testid="stTextInput"] input:disabled,
+        div[data-testid="stTextArea"] textarea:disabled,
+        div[data-testid="stNumberInput"] input:disabled {
+            opacity: 1 !important;
+            color: #3b2a00 !important;
+            -webkit-text-fill-color: #3b2a00 !important;
+        }
+        div[data-testid="stTextInput"] input::placeholder,
+        div[data-testid="stTextArea"] textarea::placeholder {
+            color: #8a6b16 !important;
+            opacity: 0.95 !important;
         }
         div[data-baseweb="select"] > div:hover,
         div[data-testid="stTextInput"] input:focus,
