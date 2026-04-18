@@ -430,7 +430,6 @@ def render_order_builder() -> None:
                         st.session_state.next_order_no += 1
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = True
-                        sync_operation_defaults()
                         st.session_state.last_finished_order = new_order.order_id
                         st.success(f"Order {new_order.order_id} added.")
                         st.rerun()
