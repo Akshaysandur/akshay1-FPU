@@ -337,13 +337,23 @@ def render_order_builder() -> None:
             with machine_col:
                 st.text_input("Machine", value=OPERATION_CATALOG[current_operation].machine, disabled=True)
             with time_col:
-                st.number_input(
-                    "Time (min)",
-                    min_value=1,
-                    max_value=99,
-                    step=1,
-                    key="operation_minutes",
-                )
+                st.markdown("**Time (min)**")
+                arrow_col, value_col, arrow_col_down = st.columns([0.55, 1.1, 0.55], gap="small")
+                with arrow_col:
+                    if st.button("▲", key=f"time_up_{current_operation}", use_container_width=True):
+                        st.session_state.operation_minutes = min(99, int(st.session_state.operation_minutes) + 1)
+                        st.rerun()
+                with value_col:
+                    st.text_input(
+                        label="Time Value",
+                        value=f"{int(st.session_state.operation_minutes)} min",
+                        disabled=True,
+                        label_visibility="collapsed",
+                    )
+                with arrow_col_down:
+                    if st.button("▼", key=f"time_down_{current_operation}", use_container_width=True):
+                        st.session_state.operation_minutes = max(1, int(st.session_state.operation_minutes) - 1)
+                        st.rerun()
 
             btn_add, btn_clear, btn_finish = st.columns(3)
             with btn_add:
