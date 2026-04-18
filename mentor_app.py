@@ -354,7 +354,7 @@ def render_order_builder() -> None:
                 st.markdown("**Time (min)**")
                 arrow_col, value_col, arrow_col_down = st.columns([0.55, 1.1, 0.55], gap="small")
                 with arrow_col:
-                    if st.button("?", key=f"time_up_{current_operation}", use_container_width=True):
+                    if st.button("▲", key=f"time_up_{current_operation}", use_container_width=True):
                         st.session_state.operation_minutes_by_name[current_operation] = min(99, current_minutes + 1)
                         st.rerun()
                 with value_col:
@@ -365,7 +365,7 @@ def render_order_builder() -> None:
                         label_visibility="collapsed",
                     )
                 with arrow_col_down:
-                    if st.button("?", key=f"time_down_{current_operation}", use_container_width=True):
+                    if st.button("▼", key=f"time_down_{current_operation}", use_container_width=True):
                         st.session_state.operation_minutes_by_name[current_operation] = max(1, current_minutes - 1)
                         st.rerun()
 
