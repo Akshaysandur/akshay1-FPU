@@ -468,10 +468,25 @@ def render_order_list() -> None:
 
     orders = sort_orders(st.session_state.orders, st.session_state.scheduler_mode)
     summary_df = pd.DataFrame([queue_summary(order) for order in orders])
-    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+    selection = st.dataframe(
+        summary_df,
+        use_container_width=True,
+        hide_index=True,
+        key="orders_table",
+        on_select="rerun",
+        selection_mode="single-row",
+    )
 
-    chosen = st.selectbox("Select order to inspect", options=[order.order_id for order in orders], key="order_picker")
-    st.session_state.selected_order = chosen
+    selected_rows = list(getattr(getattr(selection, "selection", None), "rows", []) or [])
+    if selected_rows:
+        chosen = orders[selected_rows[0]].order_id
+        st.session_state.selected_order = chosen
+    elif st.session_state.selected_order in [order.order_id for order in orders]:
+        chosen = st.session_state.selected_order
+    else:
+        chosen = orders[0].order_id
+        st.session_state.selected_order = chosen
+
     selected = next(order for order in orders if order.order_id == chosen)
 
     st.markdown("**Order Details**")
