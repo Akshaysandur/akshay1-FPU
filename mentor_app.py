@@ -39,7 +39,13 @@ def reset_metadata(clear_metadata: bool) -> None:
         st.session_state.priority_field = 3
     st.session_state.draft_ops = []
     st.session_state.order_locked = False
-    sync_operation_defaults()
+    if clear_metadata:
+        sync_operation_defaults()
+
+
+def clear_draft() -> None:
+    st.session_state.draft_ops = []
+    st.session_state.order_locked = False
 
 
 def next_execution_focus(orders: list[JobOrder], mode: str, current_id: str = "") -> str:
@@ -401,7 +407,7 @@ def render_order_builder() -> None:
                     st.rerun()
             with btn_clear:
                 if st.button("Clear Draft", use_container_width=True):
-                    reset_metadata(clear_metadata=False)
+                    clear_draft()
                     st.rerun()
             with btn_finish:
                 if st.button("Finish Order", use_container_width=True, type="primary"):
