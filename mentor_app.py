@@ -208,6 +208,64 @@ def app_style() -> None:
             white-space: pre-wrap;
             color: #3b2a00;
         }
+        .route-flow {
+            display: flex;
+            align-items: stretch;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            padding: 0.2rem 0.1rem 0.1rem;
+        }
+        .route-node {
+            position: relative;
+            min-width: 112px;
+            max-width: 180px;
+            padding: 0.85rem 1rem;
+            border-radius: 18px;
+            border: 1px solid rgba(180, 138, 0, 0.18);
+            background: linear-gradient(180deg, rgba(255, 250, 224, 0.96), rgba(255, 239, 170, 0.92));
+            box-shadow: 0 10px 24px rgba(172, 131, 0, 0.12);
+            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+        }
+        .route-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 30px rgba(172, 131, 0, 0.2);
+        }
+        .route-node.current {
+            transform: scale(1.08);
+            border-color: rgba(217, 119, 6, 0.6);
+            background: linear-gradient(180deg, rgba(255, 235, 138, 1), rgba(255, 204, 54, 0.98));
+            box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.18), 0 18px 34px rgba(217, 119, 6, 0.28);
+            animation: floatGlow 1.8s ease-in-out infinite;
+            z-index: 2;
+        }
+        .route-node .route-seq {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #8a6b16;
+            margin-bottom: 0.28rem;
+        }
+        .route-node .route-step {
+            font-size: 1.02rem;
+            font-weight: 900;
+            color: #2f2200;
+            line-height: 1.15;
+        }
+        .route-node .route-machine {
+            margin-top: 0.28rem;
+            font-size: 0.84rem;
+            color: #6b5a1c;
+        }
+        .route-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: rgba(124, 94, 0, 0.65);
+            padding: 0 0.15rem;
+            user-select: none;
+        }
         h1, h2, h3, h4, p, label, span, div { color: #2f2a18; }
         .stDataFrame, [data-testid="stDataFrame"] {
             background: rgba(255, 250, 224, 0.9);
@@ -505,19 +563,52 @@ def render_order_list() -> None:
             st.write(f"**Due Date:** {selected.due_date}")
     with detail_right:
         st.write("**Route Tree**")
-        route_rows = [{"Seq": 0, "Step": "Loading", "Machine": "-", "Time (min)": 0, "Status": "Fixed"}]
+        route_nodes = [
+            {
+                "seq": 0,
+                "step": "Loading",
+                "machine": "-",
+                "status": "Fixed",
+                "is_current": selected.current_step_index == 0 and selected.status not in {"Completed", "Cancelled"},
+            }
+        ]
         for index, step in enumerate(selected.operations, start=1):
-            route_rows.append(
+            route_nodes.append(
                 {
-                    "Seq": index,
-                    "Step": step.name,
-                    "Machine": step.machine,
-                    "Time (min)": step.minutes,
-                    "Status": step.status,
+                    "seq": index,
+                    "step": step.name,
+                    "machine": step.machine,
+                    "status": step.status,
+                    "is_current": selected.current_step_index == index and selected.status not in {"Completed", "Cancelled"},
                 }
             )
-        route_rows.append({"Seq": len(selected.operations) + 1, "Step": "Unloading", "Machine": "-", "Time (min)": 0, "Status": "Fixed"})
-        st.dataframe(pd.DataFrame(route_rows), use_container_width=True, hide_index=True)
+        route_nodes.append(
+            {
+                "seq": len(selected.operations) + 1,
+                "step": "Unloading",
+                "machine": "-",
+                "status": "Fixed",
+                "is_current": selected.status == "Completed",
+            }
+        )
+
+        flow_parts: list[str] = ['<div class="route-flow">']
+        for index, node in enumerate(route_nodes):
+            node_class = "route-node current" if node["is_current"] else "route-node"
+            flow_parts.append(
+                f"""
+                <div class="{node_class}">
+                    <div class="route-seq">Seq {node["seq"]}</div>
+                    <div class="route-step">{node["step"]}</div>
+                    <div class="route-machine">{node["machine"]}</div>
+                    <div class="route-machine">Status: {node["status"]}</div>
+                </div>
+                """
+            )
+            if index < len(route_nodes) - 1:
+                flow_parts.append('<div class="route-arrow">➜</div>')
+        flow_parts.append("</div>")
+        st.markdown("".join(flow_parts), unsafe_allow_html=True)
 
 
 def render_scheduler_tab() -> None:
