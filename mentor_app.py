@@ -30,6 +30,51 @@ def sync_operation_defaults() -> None:
     }
 
 
+def init_history_state() -> None:
+    if "field_history" not in st.session_state:
+        st.session_state.field_history = {
+            "customer": [],
+            "item_name": [],
+            "notes": [],
+        }
+
+
+def record_history(field_name: str, value: str) -> None:
+    cleaned = value.strip()
+    if not cleaned:
+        return
+    if cleaned.isdigit():
+        return
+    history = st.session_state.field_history.setdefault(field_name, [])
+    if cleaned not in history:
+        history.append(cleaned)
+
+
+def matching_history(field_name: str, current_value: str) -> list[str]:
+    history = st.session_state.field_history.get(field_name, [])
+    prefix = current_value.strip().lower()
+    matches = []
+    for item in history:
+        if not prefix or item.lower().startswith(prefix):
+            matches.append(item)
+    return matches[:6]
+
+
+def render_text_suggestions(field_name: str, current_value: str, target_key: str, disabled: bool = False) -> None:
+    if disabled:
+        return
+    matches = matching_history(field_name, current_value)
+    if not matches:
+        return
+    st.caption("Suggestions")
+    cols = st.columns(min(3, len(matches)))
+    for index, suggestion in enumerate(matches):
+        with cols[index % len(cols)]:
+            if st.button(suggestion, key=f"{field_name}_suggest_{index}_{suggestion}", use_container_width=True):
+                st.session_state[target_key] = suggestion
+                st.rerun()
+
+
 def reset_metadata(clear_metadata: bool) -> None:
     if clear_metadata:
         st.session_state.customer_field = ""
@@ -95,6 +140,7 @@ def init_state() -> None:
         st.session_state.operation_minutes_by_name = {
             name: template.minutes for name, template in OPERATION_CATALOG.items()
         }
+    init_history_state()
 def app_style() -> None:
     st.markdown(
         """
@@ -411,12 +457,15 @@ def render_order_builder() -> None:
             metadata_locked = st.session_state.order_locked
             with col1:
                 st.text_input("Order ID", key="order_id_field", disabled=True)
-                st.text_input("Customer", placeholder="Customer name", key="customer_field", disabled=metadata_locked)
+                customer_value = st.text_input("Customer", placeholder="Customer name", key="customer_field", disabled=metadata_locked)
+                render_text_suggestions("customer", customer_value, "customer_field", disabled=metadata_locked)
                 st.slider("Priority", 1, 5, key="priority_field", disabled=metadata_locked)
             with col2:
-                st.text_input("Item / Job Name", placeholder="Part or product name", key="item_name_field", disabled=metadata_locked)
+                item_value = st.text_input("Item / Job Name", placeholder="Part or product name", key="item_name_field", disabled=metadata_locked)
+                render_text_suggestions("item_name", item_value, "item_name_field", disabled=metadata_locked)
                 st.text_input("Due Date", key="due_date_field", disabled=True)
-                st.text_area("Notes", placeholder="Optional notes", height=110, key="notes_field", disabled=metadata_locked)
+                notes_value = st.text_area("Notes", placeholder="Optional notes", height=110, key="notes_field", disabled=metadata_locked)
+                render_text_suggestions("notes", notes_value, "notes_field", disabled=metadata_locked)
 
             st.markdown("**Operation Builder**")
             op_col, machine_col, time_col = st.columns([1.25, 1, 0.75])
@@ -486,6 +535,9 @@ def render_order_builder() -> None:
                         st.session_state.selected_order = new_order.order_id
                         st.session_state.execution_focus_order = new_order.order_id
                         st.session_state.next_order_no += 1
+                        record_history("customer", st.session_state.customer_field)
+                        record_history("item_name", st.session_state.item_name_field)
+                        record_history("notes", st.session_state.notes_field)
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = True
                         st.session_state.last_finished_order = new_order.order_id
