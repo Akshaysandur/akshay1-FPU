@@ -265,17 +265,17 @@ def app_style() -> None:
         div[data-baseweb="popover"] [role="option"],
         div[data-baseweb="popover"] li,
         div[data-baseweb="popover"] span {
-            color: #3b2a00 !important;
+            color: #ffffff !important;
             background: transparent !important;
         }
         div[data-baseweb="popover"] [aria-selected="true"],
         div[data-baseweb="popover"] [aria-selected="true"] * {
-            color: #2f2200 !important;
-            background: rgba(255, 223, 92, 0.45) !important;
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.14) !important;
         }
         div[data-baseweb="popover"] [role="option"]:hover {
-            background: rgba(255, 214, 51, 0.35) !important;
-            color: #2f2200 !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
         }
         div[data-testid="stDataFrame"] input[type="checkbox"],
         div[data-testid="stDataFrame"] label[role="checkbox"] {
