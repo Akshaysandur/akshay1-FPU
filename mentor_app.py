@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import streamlit as st
@@ -13,9 +15,15 @@ from mentor_scheduler.scheduler import advance_order, build_order, complete_orde
 
 st.set_page_config(page_title="FPU Job Scheduler", layout="wide")
 
+IST_TZ = ZoneInfo("Asia/Kolkata")
 
-def utc_today_str() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+def ist_now() -> datetime:
+    return datetime.now(IST_TZ)
+
+
+def ist_today_str() -> str:
+    return ist_now().strftime("%Y-%m-%d")
 
 
 def first_operation_name() -> str:
@@ -35,15 +43,32 @@ def init_history_state() -> None:
         st.session_state.field_history = {
             "customer": [],
             "item_name": [],
-            "notes": [],
         }
+    sanitized: dict[str, list[str]] = {
+        "customer": [],
+        "item_name": [],
+    }
+    for field_name, values in st.session_state.field_history.items():
+        if field_name not in sanitized:
+            continue
+        for value in values:
+            cleaned = value.strip()
+            if not cleaned:
+                continue
+            if not re.fullmatch(r"[A-Za-z][A-Za-z\s.'/-]*", cleaned):
+                continue
+            if cleaned not in sanitized[field_name]:
+                sanitized[field_name].append(cleaned)
+    st.session_state.field_history = sanitized
 
 
 def record_history(field_name: str, value: str) -> None:
     cleaned = value.strip()
     if not cleaned:
         return
-    if cleaned.isdigit():
+    if field_name not in {"customer", "item_name"}:
+        return
+    if not re.fullmatch(r"[A-Za-z][A-Za-z\s.'/-]*", cleaned):
         return
     history = st.session_state.field_history.setdefault(field_name, [])
     if cleaned not in history:
@@ -53,9 +78,11 @@ def record_history(field_name: str, value: str) -> None:
 def matching_history(field_name: str, current_value: str) -> list[str]:
     history = st.session_state.field_history.get(field_name, [])
     prefix = current_value.strip().lower()
+    if len(prefix) < 1:
+        return []
     matches = []
     for item in history:
-        if not prefix or item.lower().startswith(prefix):
+        if item.lower().startswith(prefix):
             matches.append(item)
     return matches[:6]
 
@@ -66,7 +93,7 @@ def render_text_suggestions(field_name: str, current_value: str, target_key: str
     matches = matching_history(field_name, current_value)
     if not matches:
         return
-    st.caption("Suggestions")
+    st.caption("Recent matches")
     cols = st.columns(min(3, len(matches)))
     for index, suggestion in enumerate(matches):
         with cols[index % len(cols)]:
@@ -79,7 +106,7 @@ def reset_metadata(clear_metadata: bool) -> None:
     if clear_metadata:
         st.session_state.customer_field = ""
         st.session_state.item_name_field = ""
-        st.session_state.due_date_field = utc_today_str()
+        st.session_state.due_date_field = ist_today_str()
         st.session_state.notes_field = ""
         st.session_state.priority_field = 3
     st.session_state.draft_ops = []
@@ -129,7 +156,7 @@ def init_state() -> None:
     if "item_name_field" not in st.session_state:
         st.session_state.item_name_field = ""
     if "due_date_field" not in st.session_state:
-        st.session_state.due_date_field = utc_today_str()
+        st.session_state.due_date_field = ist_today_str()
     if "notes_field" not in st.session_state:
         st.session_state.notes_field = ""
     if "priority_field" not in st.session_state:
@@ -405,7 +432,7 @@ def render_summary_strip() -> None:
     total_orders = len(st.session_state.orders)
     active_orders = len([order for order in st.session_state.orders if order.status not in {"Completed", "Cancelled"}])
     focus_order = st.session_state.execution_focus_order or st.session_state.selected_order or "None"
-    utc_stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    utc_stamp = ist_now().strftime("%Y-%m-%d %H:%M IST")
 
     st.markdown(
         f"""
@@ -426,7 +453,7 @@ def render_summary_strip() -> None:
                 <div class="stat-foot">Execution tab selection</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">UTC Clock</div>
+                <div class="stat-label">IST Clock</div>
                 <div class="stat-value" style="font-size:1.05rem;">{utc_stamp}</div>
                 <div class="stat-foot">Auto-filled due date source</div>
             </div>
@@ -440,7 +467,7 @@ def sidebar_controls() -> None:
     st.sidebar.header("FPU Basics")
     st.sidebar.write(f"Scheduler mode: **{st.session_state.scheduler_mode}**")
     st.sidebar.write(f"Next order: **{st.session_state.order_id_field}**")
-    st.sidebar.write(f"UTC date: **{utc_today_str()}**")
+    st.sidebar.write(f"IST date: **{ist_today_str()}**")
     st.sidebar.divider()
     st.sidebar.caption("Simple scheduler for job metadata, draft building, and execution flow.")
 
@@ -465,7 +492,6 @@ def render_order_builder() -> None:
                 render_text_suggestions("item_name", item_value, "item_name_field", disabled=metadata_locked)
                 st.text_input("Due Date", key="due_date_field", disabled=True)
                 notes_value = st.text_area("Notes", placeholder="Optional notes", height=110, key="notes_field", disabled=metadata_locked)
-                render_text_suggestions("notes", notes_value, "notes_field", disabled=metadata_locked)
 
             st.markdown("**Operation Builder**")
             op_col, machine_col, time_col = st.columns([1.25, 1, 0.75])
@@ -537,7 +563,6 @@ def render_order_builder() -> None:
                         st.session_state.next_order_no += 1
                         record_history("customer", st.session_state.customer_field)
                         record_history("item_name", st.session_state.item_name_field)
-                        record_history("notes", st.session_state.notes_field)
                         st.session_state.draft_ops = []
                         st.session_state.order_locked = True
                         st.session_state.last_finished_order = new_order.order_id

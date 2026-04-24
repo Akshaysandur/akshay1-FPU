@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from mentor_scheduler.catalog import OPERATION_CATALOG
 from mentor_scheduler.models import DraftOperation, JobOrder, OperationStep, SchedulerState
+
+IST_TZ = ZoneInfo("Asia/Kolkata")
 
 
 def build_operation(name: str, minutes: int | None = None) -> OperationStep:
@@ -27,7 +30,7 @@ def build_order(
         priority=priority,
         due_date=due_date,
         notes=notes,
-        created_at=datetime.now(),
+        created_at=datetime.now(IST_TZ),
         operations=[build_operation(item.name, item.minutes) for item in operations],
     )
 
@@ -115,4 +118,4 @@ def tick_scheduler(orders: list[JobOrder]) -> list[JobOrder]:
 
 
 def make_scheduler_state(mode: str, active_order_id: str = "") -> SchedulerState:
-    return SchedulerState(mode=mode, last_run=datetime.now(), active_order_id=active_order_id)
+    return SchedulerState(mode=mode, last_run=datetime.now(IST_TZ), active_order_id=active_order_id)
