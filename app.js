@@ -16,6 +16,8 @@ const FPU_INFO = [
   ["Execution", "Step-by-step order progress"],
 ];
 
+const MQTT_DEFAULT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
+
 const defaultState = {
   activeTab: "orders",
   schedulerMode: "Dynamic",
@@ -36,6 +38,16 @@ const defaultState = {
   draftOps: [],
   orders: [],
   lastSaved: "Never",
+  mqtt: {
+    brokerUrl: MQTT_DEFAULT_BROKER,
+    clientId: `fpu_${Math.random().toString(16).slice(2, 10)}`,
+    connected: false,
+    status: "Local simulation",
+    lastUpdate: "Never",
+    messageRate: 0,
+    fmsMode: "Local simulation",
+  },
+  mqttLog: [],
 };
 
 let state = normalizeState(loadState());
@@ -57,6 +69,15 @@ const el = {
   operationPicker: document.getElementById("operationPicker"),
   machineField: document.getElementById("machineField"),
   timeField: document.getElementById("timeField"),
+  mqttBrokerField: document.getElementById("mqttBrokerField"),
+  mqttClientField: document.getElementById("mqttClientField"),
+  mqttConnectBtn: document.getElementById("mqttConnectBtn"),
+  mqttDisconnectBtn: document.getElementById("mqttDisconnectBtn"),
+  mqttStatus: document.getElementById("mqttStatus"),
+  mqttRate: document.getElementById("mqttRate"),
+  mqttLastUpdate: document.getElementById("mqttLastUpdate"),
+  mqttFmsMode: document.getElementById("mqttFmsMode"),
+  mqttLog: document.getElementById("mqttLog"),
   customerSuggestions: document.getElementById("customerSuggestions"),
   itemSuggestions: document.getElementById("itemSuggestions"),
   notesSuggestions: document.getElementById("notesSuggestions"),
@@ -138,6 +159,26 @@ function normalizeState(incoming) {
     merged.orders = incoming.orders.map(normalizeOrder);
   }
 
+  if (incoming.mqtt && typeof incoming.mqtt === "object") {
+    merged.mqtt = {
+      brokerUrl: String(incoming.mqtt.brokerUrl || MQTT_DEFAULT_BROKER),
+      clientId: String(incoming.mqtt.clientId || merged.mqtt.clientId),
+      connected: false,
+      status: "Local simulation",
+      lastUpdate: String(incoming.mqtt.lastUpdate || merged.mqtt.lastUpdate),
+      messageRate: clampInt(incoming.mqtt.messageRate ?? 0, 0, 999),
+      fmsMode: "Local simulation",
+    };
+  }
+
+  if (Array.isArray(incoming.mqttLog)) {
+    merged.mqttLog = incoming.mqttLog.slice(0, 12).map((entry) => ({
+      time: String(entry.time || ""),
+      title: String(entry.title || ""),
+      body: String(entry.body || ""),
+    }));
+  }
+
   if (incoming.fieldHistory && typeof incoming.fieldHistory === "object") {
     merged.fieldHistory = {
       customer: sanitizeHistory(incoming.fieldHistory.customer),
@@ -184,10 +225,254 @@ function sanitizeHistory(list) {
   return cleaned.slice(0, 12);
 }
 
+const MQTT_TOPICS = {
+  jobsCreate: "fluid/fpu/jobs/create",
+  systemStart: "fluid/fpu/system/start",
+  systemStop: "fluid/fpu/system/stop",
+  systemReset: "fluid/fpu/system/reset",
+  schedulerReassign: "fluid/fpu/scheduler/reassign",
+  jobPriority: "fluid/fpu/jobs/priority",
+  amrManual: "fluid/fpu/amr/manual",
+  statusSystem: "fluid/fpu/status/system",
+  statusAmr: "fluid/fpu/status/amr",
+  schedulerQueue: "fluid/fpu/scheduler/queue",
+  alertsEvent: "fluid/fpu/alerts/event",
+};
+
+let mqttClient = null;
+let mqttRateWindow = [];
+
+function mqttEnabled() {
+  return typeof window.mqtt !== "undefined" && state.mqtt.connected;
+}
+
+function shortJson(payload) {
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return String(payload);
+  }
+}
+
+function pushMqttLog(title, body) {
+  state.mqttLog.unshift({
+    time: istDateTime(new Date()).slice(11, 19),
+    title,
+    body,
+  });
+  state.mqttLog = state.mqttLog.slice(0, 12);
+  state.mqtt.lastUpdate = formatISTDateTime(new Date());
+  mqttRateWindow.push(Date.now());
+  mqttRateWindow = mqttRateWindow.filter((stamp) => Date.now() - stamp < 60000);
+  state.mqtt.messageRate = mqttRateWindow.length;
+  persistState();
+}
+
+function setMqttStatus(status, fmsMode = state.mqtt.fmsMode) {
+  state.mqtt.status = status;
+  state.mqtt.fmsMode = fmsMode;
+  persistState();
+}
+
+function renderMqttPanel() {
+  el.mqttBrokerField.value = state.mqtt.brokerUrl;
+  el.mqttClientField.value = state.mqtt.clientId;
+  el.mqttStatus.textContent = state.mqtt.status;
+  el.mqttRate.textContent = `${state.mqtt.messageRate}/min`;
+  el.mqttLastUpdate.textContent = state.mqtt.lastUpdate;
+  el.mqttFmsMode.textContent = state.mqtt.fmsMode;
+  el.mqttLog.innerHTML = state.mqttLog.length
+    ? state.mqttLog
+        .map(
+          (entry) => `
+            <div class="mqtt-entry">
+              <div class="mqtt-title">${escapeHtml(entry.time)} · ${escapeHtml(entry.title)}</div>
+              <div class="mqtt-body">${escapeHtml(entry.body)}</div>
+            </div>`,
+        )
+        .join("")
+    : `<div class="mqtt-entry"><div class="mqtt-title">No MQTT traffic yet</div><div class="mqtt-body">Connect a broker or use the local FMS simulation.</div></div>`;
+}
+
+function connectMqtt() {
+  if (typeof window.mqtt === "undefined") {
+    setMqttStatus("MQTT library unavailable", "Local simulation");
+    pushMqttLog("MQTT", "mqtt.js did not load; staying in local simulation mode.");
+    renderAll();
+    return;
+  }
+
+  if (mqttClient) {
+    mqttClient.end(true);
+    mqttClient = null;
+  }
+
+  state.mqtt.brokerUrl = el.mqttBrokerField.value.trim() || MQTT_DEFAULT_BROKER;
+  state.mqtt.clientId = el.mqttClientField.value.trim() || `fpu_${Math.random().toString(16).slice(2, 10)}`;
+
+  mqttClient = window.mqtt.connect(state.mqtt.brokerUrl, {
+    clientId: state.mqtt.clientId,
+    clean: true,
+    reconnectPeriod: 3000,
+    connectTimeout: 6000,
+  });
+
+  mqttClient.on("connect", () => {
+    state.mqtt.connected = true;
+    setMqttStatus("Connected", "Broker-backed FMS");
+    mqttClient.subscribe(Object.values(MQTT_TOPICS), (err) => {
+      pushMqttLog("MQTT", err ? `Subscribe failed: ${err.message}` : "Subscribed to FMS topics.");
+      renderAll();
+    });
+    publishSystemSnapshot("MQTT connected.");
+    renderAll();
+  });
+
+  mqttClient.on("reconnect", () => {
+    setMqttStatus("Reconnecting", "Broker-backed FMS");
+    renderAll();
+  });
+
+  mqttClient.on("close", () => {
+    if (state.mqtt.connected) {
+      state.mqtt.connected = false;
+      setMqttStatus("Disconnected", "Local simulation");
+      pushMqttLog("MQTT", "Broker connection closed.");
+      renderAll();
+    }
+  });
+
+  mqttClient.on("error", (error) => {
+    state.mqtt.connected = false;
+    setMqttStatus("Connection error", "Local simulation");
+    pushMqttLog("MQTT", error.message || "MQTT error");
+    renderAll();
+  });
+
+  mqttClient.on("message", (topic, message) => {
+    handleMqttMessage(topic, message.toString());
+  });
+}
+
+function disconnectMqtt() {
+  if (mqttClient) {
+    mqttClient.end(true);
+    mqttClient = null;
+  }
+  state.mqtt.connected = false;
+  setMqttStatus("Disconnected", "Local simulation");
+  pushMqttLog("MQTT", "Disconnected from broker.");
+  renderAll();
+}
+
+function publishMqtt(topic, payload) {
+  const body = typeof payload === "string" ? payload : shortJson(payload);
+  if (mqttEnabled() && mqttClient) {
+    mqttClient.publish(topic, body, { qos: 0, retain: false });
+    pushMqttLog("Publish", `${topic} → ${body}`);
+    return;
+  }
+  simulateFms(topic, payload);
+}
+
+function publishSystemSnapshot(message) {
+  const payload = {
+    message,
+    systemState: state.orders.some((order) => order.status === "Running") ? "Running" : "Stopped",
+    activeJobs: state.orders.filter((order) => !["Completed", "Cancelled"].includes(order.status)).length,
+    updatedAt: formatISTDateTime(new Date()),
+  };
+  publishMqtt(MQTT_TOPICS.statusSystem, payload);
+}
+
+function publishQueueSnapshot() {
+  const payload = {
+    mode: state.schedulerMode,
+    queue: sortOrders().map(queueSummary),
+    updatedAt: formatISTDateTime(new Date()),
+  };
+  publishMqtt(MQTT_TOPICS.schedulerQueue, payload);
+}
+
+function publishAmrSnapshot() {
+  const payload = {
+    amrs: [
+      { amrId: "AMR-01", status: "Idle", battery: 88, task: "Awaiting dispatch", location: "Loading" },
+      { amrId: "AMR-02", status: "Charging", battery: 48, task: "Charging cycle", location: "Charging" },
+      { amrId: "AMR-03", status: "Idle", battery: 76, task: "Awaiting dispatch", location: "Loading" },
+      { amrId: "AMR-04", status: "Idle", battery: 92, task: "Awaiting dispatch", location: "Loading" },
+    ],
+    updatedAt: formatISTDateTime(new Date()),
+  };
+  publishMqtt(MQTT_TOPICS.statusAmr, payload);
+}
+
+function simulateFms(topic, payload) {
+  const body = typeof payload === "string" ? payload : shortJson(payload);
+  state.mqtt.fmsMode = "Local simulation";
+  if (topic === MQTT_TOPICS.jobsCreate) {
+    pushMqttLog("FMS", `Job received: ${body}`);
+    publishSystemSnapshot("Job stored in local FMS queue.");
+    publishQueueSnapshot();
+    publishAmrSnapshot();
+    publishMqtt(MQTT_TOPICS.alertsEvent, {
+      severity: "Info",
+      message: "Job created and queued in local simulation.",
+      timestamp: formatISTDateTime(new Date()),
+    });
+  } else if (topic === MQTT_TOPICS.systemStart) {
+    pushMqttLog("FMS", "System start requested.");
+    publishSystemSnapshot("System running.");
+  } else if (topic === MQTT_TOPICS.systemStop) {
+    pushMqttLog("FMS", "System stop requested.");
+    publishSystemSnapshot("System stopped.");
+  } else if (topic === MQTT_TOPICS.systemReset) {
+    pushMqttLog("FMS", "System reset requested.");
+    publishSystemSnapshot("System reset.");
+    publishQueueSnapshot();
+  } else if (topic === MQTT_TOPICS.schedulerReassign) {
+    pushMqttLog("FMS", `Reassign request: ${body}`);
+    publishQueueSnapshot();
+  } else if (topic === MQTT_TOPICS.jobPriority) {
+    pushMqttLog("FMS", `Priority update: ${body}`);
+    publishQueueSnapshot();
+  } else if (topic === MQTT_TOPICS.amrManual) {
+    pushMqttLog("FMS", `AMR manual command: ${body}`);
+    publishAmrSnapshot();
+  } else if (topic === MQTT_TOPICS.statusSystem) {
+    pushMqttLog("Status", `System: ${body}`);
+  } else if (topic === MQTT_TOPICS.statusAmr) {
+    pushMqttLog("Status", `AMR: ${body}`);
+  } else if (topic === MQTT_TOPICS.schedulerQueue) {
+    pushMqttLog("Status", `Queue: ${body}`);
+  } else if (topic === MQTT_TOPICS.alertsEvent) {
+    pushMqttLog("Alert", body);
+  } else {
+    pushMqttLog("FMS", `Unhandled topic ${topic}: ${body}`);
+  }
+  renderMqttPanel();
+}
+
+function handleMqttMessage(topic, payloadText) {
+  let payload = payloadText;
+  try {
+    payload = JSON.parse(payloadText);
+  } catch {
+    payload = payloadText;
+  }
+  if (topic === MQTT_TOPICS.statusSystem) {
+    setMqttStatus("Connected", "Broker-backed FMS");
+  }
+  const summary = typeof payload === "string" ? payload : shortJson(payload);
+  pushMqttLog(`RX ${topic.split("/").slice(-1)[0]}`, summary);
+  renderAll();
+}
+
 function persistState() {
   state.lastSaved = formatISTDateTime(new Date());
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   renderSidebar();
+  renderMqttPanel();
 }
 
 function istDate(date = new Date()) {
@@ -597,6 +882,18 @@ function finishOrder() {
   state.draftOps = [];
   state.orderLocked = true;
   persistState();
+  publishMqtt(MQTT_TOPICS.jobsCreate, {
+    orderId: newOrder.orderId,
+    customer: newOrder.customer,
+    itemName: newOrder.itemName,
+    priority: newOrder.priority,
+    dueDate: newOrder.dueDate,
+    operations: newOrder.operations,
+    createdAt: formatISTDateTime(new Date(newOrder.createdAt)),
+  });
+  publishQueueSnapshot();
+  publishAmrSnapshot();
+  publishSystemSnapshot(`Job ${newOrder.orderId} created.`);
   renderAll();
   alert(`Order ${orderId} added.`);
 }
@@ -617,6 +914,12 @@ function runScheduler() {
     }
   }
   persistState();
+  publishMqtt(MQTT_TOPICS.systemStart, {
+    mode: state.schedulerMode,
+    queue: sortOrders().map(queueSummary),
+    updatedAt: formatISTDateTime(new Date()),
+  });
+  publishQueueSnapshot();
   renderAll();
 }
 
@@ -716,21 +1019,47 @@ function handleExecutionAction(action, orderId) {
       order.operations[order.currentStepIndex].status = "Pending";
       order.status = "Running";
     }
+    publishMqtt(MQTT_TOPICS.amrManual, {
+      orderId,
+      action: "previous",
+      step: nextStep(order),
+      timestamp: formatISTDateTime(new Date()),
+    });
   } else if (action === "advance") {
     advanceOrder(order);
+    publishMqtt(MQTT_TOPICS.amrManual, {
+      orderId,
+      action: "advance",
+      step: nextStep(order),
+      timestamp: formatISTDateTime(new Date()),
+    });
   } else if (action === "complete") {
     const nextFocus = nextExecutionFocus(orderId);
     completeOrder(order);
     state.executionFocusOrder = nextFocus;
     state.selectedOrderId = nextFocus;
+    publishMqtt(MQTT_TOPICS.alertsEvent, {
+      severity: "Info",
+      message: `Order ${orderId} completed from execution tab.`,
+      timestamp: formatISTDateTime(new Date()),
+    });
+    publishMqtt(MQTT_TOPICS.schedulerReassign, {
+      orderId,
+      action: "complete",
+      nextFocus,
+      timestamp: formatISTDateTime(new Date()),
+    });
   }
   persistState();
+  publishQueueSnapshot();
+  publishSystemSnapshot(`Execution updated for ${orderId}.`);
   renderAll();
 }
 
 function renderAll() {
   renderTabs();
   renderSidebar();
+  renderMqttPanel();
   renderSummary();
   renderFields();
   renderCatalogTables();
@@ -744,6 +1073,21 @@ function renderAll() {
 function bindEvents() {
   el.tabButtons.forEach((button) => {
     button.addEventListener("click", () => setTab(button.dataset.tab));
+  });
+
+  el.mqttBrokerField.value = state.mqtt.brokerUrl;
+  el.mqttClientField.value = state.mqtt.clientId;
+  el.mqttConnectBtn.addEventListener("click", connectMqtt);
+  el.mqttDisconnectBtn.addEventListener("click", disconnectMqtt);
+  el.mqttBrokerField.addEventListener("input", (event) => {
+    state.mqtt.brokerUrl = event.target.value;
+    persistState();
+    renderMqttPanel();
+  });
+  el.mqttClientField.addEventListener("input", (event) => {
+    state.mqtt.clientId = event.target.value;
+    persistState();
+    renderMqttPanel();
   });
 
   el.customerField.addEventListener("input", (event) => {

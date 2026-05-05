@@ -119,6 +119,79 @@ button {
   line-height: 1.5;
 }
 
+.mqtt-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mqtt-card label {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.mqtt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.mqtt-actions .btn {
+  padding: 0.7rem 0.9rem;
+}
+
+.mqtt-metrics {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mqtt-metrics div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(255, 247, 210, 0.65);
+  border: 1px solid rgba(180, 138, 0, 0.1);
+}
+
+.mqtt-metrics span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.mqtt-metrics strong {
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+.mqtt-log {
+  max-height: 190px;
+  overflow: auto;
+  display: grid;
+  gap: 0.5rem;
+  padding-right: 0.1rem;
+}
+
+.mqtt-entry {
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
+  background: rgba(255, 248, 220, 0.9);
+  border: 1px solid rgba(180, 138, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(172, 131, 0, 0.06);
+}
+
+.mqtt-entry .mqtt-title {
+  font-weight: 800;
+  font-size: 0.84rem;
+}
+
+.mqtt-entry .mqtt-body {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.18rem;
+  line-height: 1.35;
+}
+
 .main {
   padding: 1rem 1rem 2rem;
 }

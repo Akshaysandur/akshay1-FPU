@@ -1,6 +1,6 @@
 # FPU Job Scheduler
 
-This repository now contains a fully independent, self-contained web application for job scheduling and execution tracking.
+This repository now contains a fully independent, self-contained web application for job scheduling and execution tracking, plus an optional MQTT-based FMS simulator.
 
 ## What changed
 
@@ -15,6 +15,7 @@ This repository now contains a fully independent, self-contained web application
 - `styles.css` - the visual theme
 - `app.js` - all app logic
 - `serve.py` - optional local static server
+- `fms_simulator.py` - optional MQTT companion service
 
 ## How to run
 
@@ -36,6 +37,17 @@ Then open:
 http://127.0.0.1:8000
 ```
 
+## MQTT + FMS
+
+The browser app can publish MQTT events to a broker over WebSockets. To get live FMS-style responses, run the optional simulator in a separate terminal:
+
+```powershell
+pip install -r fms_requirements.txt
+python fms_simulator.py
+```
+
+By default the browser app uses the public MQTT broker `wss://broker.hivemq.com:8884/mqtt`. You can change the broker URL and client ID from the MQTT Communication panel in the sidebar.
+
 ## Behavior
 
 - Orders/Jobs tab for metadata, operation building, catalog, and draft preview
@@ -45,6 +57,8 @@ http://127.0.0.1:8000
 - IST-based date and timestamp handling
 - Field-specific suggestions for metadata inputs
 - Route flow shown as animated cards instead of a table
+- MQTT communication status, publish logs, and FMS command publishing
+- Optional local FMS simulator that can subscribe to the same topics and publish live status updates
 
 ## Notes
 

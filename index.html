@@ -29,6 +29,25 @@
         <h3>Independent build</h3>
         <p>No Streamlit, no external UI framework. Open this page directly or serve it as a static site.</p>
       </section>
+
+      <section class="side-card mqtt-card">
+        <h2>MQTT Communication</h2>
+        <label for="mqttBrokerField">Broker URL</label>
+        <input id="mqttBrokerField" type="text" autocomplete="off" placeholder="wss://broker.example.com:8084/mqtt" />
+        <label for="mqttClientField">Client ID</label>
+        <input id="mqttClientField" type="text" autocomplete="off" />
+        <div class="mqtt-actions">
+          <button id="mqttConnectBtn" class="btn primary" type="button">Connect</button>
+          <button id="mqttDisconnectBtn" class="btn" type="button">Disconnect</button>
+        </div>
+        <div class="mqtt-metrics">
+          <div><span>Status</span><strong id="mqttStatus">Idle</strong></div>
+          <div><span>Message rate</span><strong id="mqttRate">0/min</strong></div>
+          <div><span>Last update</span><strong id="mqttLastUpdate">Never</strong></div>
+          <div><span>FMS mode</span><strong id="mqttFmsMode">Local simulation</strong></div>
+        </div>
+        <div class="mqtt-log" id="mqttLog"></div>
+      </section>
     </aside>
 
     <main class="main">
@@ -185,6 +204,7 @@
     </main>
   </div>
 
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
