@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPU Job Scheduler</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">FPU</div>
+        <div>
+          <div class="brand-title">Job Scheduler</div>
+          <div class="brand-subtitle">Independent web app</div>
+        </div>
+      </div>
+
+      <section class="side-card">
+        <h2>FPU Basics</h2>
+        <div class="side-row"><span>Scheduler mode</span><strong id="sidebarMode">Dynamic</strong></div>
+        <div class="side-row"><span>Next order</span><strong id="sidebarNextOrder">ORD-001</strong></div>
+        <div class="side-row"><span>IST date</span><strong id="sidebarIstDate">--</strong></div>
+        <div class="side-row"><span>Last saved</span><strong id="sidebarLastSaved">None</strong></div>
+      </section>
+
+      <section class="side-card side-note">
+        <h3>Independent build</h3>
+        <p>No Streamlit, no external UI framework. Open this page directly or serve it as a static site.</p>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="page-title">
+          <h1>FPU Job Scheduler</h1>
+          <p>Orders, scheduling, execution, and route flow in one self-contained interface.</p>
+        </div>
+        <div class="status-pill" id="liveClock">IST --:--</div>
+      </header>
+
+      <nav class="tabbar" role="tablist" aria-label="FPU sections">
+        <button class="tab-btn active" data-tab="orders" role="tab" aria-selected="true">Orders/Jobs</button>
+        <button class="tab-btn" data-tab="scheduling" role="tab" aria-selected="false">Scheduling</button>
+        <button class="tab-btn" data-tab="execution" role="tab" aria-selected="false">Execution</button>
+        <button class="tab-btn" data-tab="catalog" role="tab" aria-selected="false">Catalog</button>
+      </nav>
+
+      <section class="tab-panel active" id="tab-orders" role="tabpanel">
+        <div class="summary-grid" id="summaryGrid"></div>
+
+        <div class="builder-grid">
+          <section class="panel">
+            <h2>Job Metadata</h2>
+            <div class="meta-grid">
+              <div>
+                <label for="orderIdField">Order ID</label>
+                <input id="orderIdField" type="text" readonly />
+              </div>
+              <div>
+                <label for="customerField">Customer</label>
+                <input id="customerField" type="text" autocomplete="off" placeholder="Customer name" />
+                <div class="suggestions" id="customerSuggestions"></div>
+              </div>
+              <div>
+                <label for="itemNameField">Item / Job Name</label>
+                <input id="itemNameField" type="text" autocomplete="off" placeholder="Part or product name" />
+                <div class="suggestions" id="itemSuggestions"></div>
+              </div>
+              <div>
+                <label for="dueDateField">Due Date</label>
+                <input id="dueDateField" type="text" readonly />
+              </div>
+              <div>
+                <label for="priorityField">Priority</label>
+                <input id="priorityField" type="range" min="1" max="5" step="1" />
+                <div class="range-readout"><span>Low</span><strong id="priorityValue">3</strong><span>High</span></div>
+              </div>
+              <div>
+                <label for="notesField">Notes</label>
+                <textarea id="notesField" rows="4" placeholder="Optional notes"></textarea>
+                <div class="suggestions" id="notesSuggestions"></div>
+              </div>
+            </div>
+
+            <h2>Operation Builder</h2>
+            <div class="op-grid">
+              <div>
+                <label for="operationPicker">Operation</label>
+                <select id="operationPicker"></select>
+              </div>
+              <div>
+                <label for="machineField">Machine</label>
+                <input id="machineField" type="text" readonly />
+              </div>
+              <div>
+                <label>Time (min)</label>
+                <div class="time-control">
+                  <button id="timeDownBtn" type="button" aria-label="Decrease time">▼</button>
+                  <input id="timeField" type="text" readonly />
+                  <button id="timeUpBtn" type="button" aria-label="Increase time">▲</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="addOperationBtn" class="btn primary" type="button">Add Operation</button>
+              <button id="clearDraftBtn" class="btn" type="button">Clear Draft</button>
+              <button id="finishOrderBtn" class="btn accent" type="button">Finish Order</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Catalog</h2>
+            <div class="table-wrap">
+              <table class="data-table" id="catalogTable"></table>
+            </div>
+
+            <h2>Draft Preview</h2>
+            <div id="draftPreview" class="draft-preview"></div>
+          </section>
+        </div>
+
+        <section class="panel orders-panel">
+          <div class="panel-header">
+            <h2>List of Orders</h2>
+            <div class="panel-hint">Click any row to inspect the order details below.</div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table clickable" id="ordersTable"></table>
+          </div>
+
+          <div id="orderDetails" class="details-empty">
+            Select an order row to inspect the details and route flow.
+          </div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-scheduling" role="tabpanel">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Scheduling</h2>
+            <div class="segmented" role="group" aria-label="Scheduler mode">
+              <button id="modeStaticBtn" class="segment-btn" type="button">Static</button>
+              <button id="modeDynamicBtn" class="segment-btn active" type="button">Dynamic</button>
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="runSchedulerBtn" class="btn primary" type="button">Run Scheduler</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="queueTable"></table>
+          </div>
+          <p class="muted">Static mode sorts by Order ID. Dynamic mode sorts by higher priority first, then by age.</p>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-execution" role="tabpanel">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Execution</h2>
+            <div class="muted">Active jobs are shown vertically. The focused job is highlighted.</div>
+          </div>
+          <div id="executionList" class="execution-list"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-catalog" role="tabpanel">
+        <div class="builder-grid">
+          <section class="panel">
+            <h2>Operation Catalog</h2>
+            <div class="table-wrap">
+              <table class="data-table" id="catalogTableFull"></table>
+            </div>
+          </section>
+          <section class="panel">
+            <h2>FPU Basics</h2>
+            <div class="table-wrap">
+              <table class="data-table" id="basicsTable"></table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

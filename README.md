@@ -1,52 +1,51 @@
-# Fluid Production System Dashboard
+# FPU Job Scheduler
 
-Streamlit dashboard for monitoring and controlling a fluid production system with AMRs, MQTT, and fleet management integration.
+This repository now contains a fully independent, self-contained web application for job scheduling and execution tracking.
 
-## Run
+## What changed
 
-1. Install dependencies:
-   `pip install -r requirements.txt`
-2. Start the app:
-   `streamlit run app.py`
+- Removed the Streamlit-based runtime from the active app.
+- Replaced it with a standalone static web app built with plain HTML, CSS, and JavaScript.
+- The app runs entirely in the browser and keeps its state in `localStorage`.
+- No third-party Python packages are required.
 
-## Deploy
+## Files to open
 
-Recommended option: Streamlit Community Cloud
+- `index.html` - the main application
+- `styles.css` - the visual theme
+- `app.js` - all app logic
+- `serve.py` - optional local static server
 
-1. Create a new GitHub repository.
-2. Upload this project folder contents.
-3. Make sure these files are present in the repo root:
-   - `app.py`
-   - `requirements.txt`
-   - `layout.png`
-   - `dashboard/`
-4. Go to `https://share.streamlit.io/`
-5. Sign in with GitHub and choose your repository.
-6. Set the main file path to `app.py`.
-7. Click Deploy.
+## How to run
 
-After deployment, Streamlit will give you a shareable public URL.
+### Option 1: Open directly
 
-## Update After Deployment
+Open `index.html` in a browser.
 
-You can make changes later at any time:
+### Option 2: Use the built-in server
 
-1. Edit the code locally.
-2. Commit and push changes to the same GitHub repository.
-3. The deployed Streamlit app will update from the new version.
+Run:
 
-## MQTT Topics
+```powershell
+python serve.py
+```
 
-- `fluid/fps/jobs/create`
-- `fluid/fps/system/start`
-- `fluid/fps/system/stop`
-- `fluid/fps/system/reset`
-- `fluid/fps/jobs/priority`
-- `fluid/fps/amr/manual`
-- `fluid/fps/scheduler/reassign`
-- `fluid/fps/status/system`
-- `fluid/fps/status/amr`
-- `fluid/fps/scheduler/queue`
-- `fluid/fps/alerts/event`
+Then open:
 
-The UI falls back to simulation mode when the broker is unreachable, so the layout and AMR flow remain testable during development.
+```text
+http://127.0.0.1:8000
+```
+
+## Behavior
+
+- Orders/Jobs tab for metadata, operation building, catalog, and draft preview
+- Scheduling tab for queue management and a running scheduler simulation
+- Execution tab for focused job control with previous, advance, and complete actions
+- Catalog tab for operation reference and FPU basics
+- IST-based date and timestamp handling
+- Field-specific suggestions for metadata inputs
+- Route flow shown as animated cards instead of a table
+
+## Notes
+
+The previous Streamlit files are still in the repository as legacy reference, but they are no longer the active app.
