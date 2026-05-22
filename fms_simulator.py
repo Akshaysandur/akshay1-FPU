@@ -95,6 +95,7 @@ class FmsSimulator:
                 (TOPICS["scheduler_reassign"], 0),
                 (TOPICS["job_priority"], 0),
                 (TOPICS["amr_manual"], 0),
+                (TOPICS["alerts_event"], 0),
             ]
         )
         print("FMS subscribed to browser handshake and job topics.", flush=True)
@@ -121,11 +122,25 @@ class FmsSimulator:
                 self.system_state = "Stopped"
             self.publish_snapshots("System reset.")
         elif msg.topic == TOPICS["scheduler_reassign"]:
-            self.publish_queue("Reassign requested.")
+            action = ""
+            order_id = ""
+            if isinstance(data, dict):
+                action = str(data.get("action") or "").strip().lower()
+                order_id = str(data.get("orderId") or data.get("order_id") or "").strip()
+            if action == "complete" and order_id:
+                print(f"FMS job completed: {order_id}", flush=True)
+                self.publish_system(f"Job {order_id} completed.")
+                self.publish_alert("Info", f"Job {order_id} completed.")
+            else:
+                self.publish_queue("Reassign requested.")
         elif msg.topic == TOPICS["job_priority"]:
             self.publish_queue("Priority updated.")
         elif msg.topic == TOPICS["amr_manual"]:
             self.publish_amrs("Manual AMR command received.")
+        elif msg.topic == TOPICS["alerts_event"] and isinstance(data, dict):
+            severity = str(data.get("severity") or "Info")
+            message = str(data.get("message") or "")
+            print(f"ALERT [{severity}] {message}", flush=True)
         elif msg.topic == TOPICS["system_connect"] and isinstance(data, dict):
             web_url = str(data.get("webUrl") or data.get("web_url") or "Unknown web URL")
             client_id = str(data.get("clientId") or data.get("client_id") or "Unknown client")
