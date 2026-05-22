@@ -333,7 +333,7 @@ function connectMqtt() {
       clientId: state.mqtt.clientId,
       brokerUrl: state.mqtt.brokerUrl,
       timestamp: formatISTDateTime(new Date()),
-    });
+    }, { retain: true });
     publishSystemSnapshot("MQTT connected.");
     renderAll();
   });
@@ -374,7 +374,7 @@ function disconnectMqtt() {
       brokerUrl: state.mqtt.brokerUrl,
       timestamp: formatISTDateTime(new Date()),
     };
-    mqttClient.publish(MQTT_TOPICS.systemDisconnect, shortJson(payload), { qos: 0, retain: false }, () => {
+    mqttClient.publish(MQTT_TOPICS.systemDisconnect, shortJson(payload), { qos: 0, retain: true }, () => {
       if (mqttClient) {
         mqttClient.end(true);
         mqttClient = null;
@@ -390,10 +390,10 @@ function disconnectMqtt() {
   renderAll();
 }
 
-function publishMqtt(topic, payload) {
+function publishMqtt(topic, payload, options = {}) {
   const body = typeof payload === "string" ? payload : shortJson(payload);
   if (mqttEnabled() && mqttClient) {
-    mqttClient.publish(topic, body, { qos: 0, retain: false });
+    mqttClient.publish(topic, body, { qos: 0, retain: false, ...options });
     pushMqttLog("Publish", `${topic} → ${body}`);
     return;
   }

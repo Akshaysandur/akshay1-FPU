@@ -80,10 +80,10 @@ class FmsSimulator:
         self.client.connect(self.broker_host, self.broker_port, keepalive=60)
         self.client.loop_start()
         threading.Thread(target=self.tick_loop, daemon=True).start()
-        print(f"Connected to MQTT broker {self.broker_host}:{self.broker_port}")
+        print(f"Connected to MQTT broker {self.broker_host}:{self.broker_port}", flush=True)
 
     def on_connect(self, client, userdata, flags, reason_code, properties=None) -> None:
-        print(f"MQTT connected: {reason_code}")
+        print(f"MQTT connected: {reason_code}", flush=True)
         client.subscribe(
             [
                 (TOPICS["system_connect"], 0),
@@ -97,6 +97,7 @@ class FmsSimulator:
                 (TOPICS["amr_manual"], 0),
             ]
         )
+        print("FMS subscribed to browser handshake and job topics.", flush=True)
         self.publish_snapshots("FMS online")
 
     def on_message(self, client, userdata, msg) -> None:
@@ -128,13 +129,13 @@ class FmsSimulator:
         elif msg.topic == TOPICS["system_connect"] and isinstance(data, dict):
             web_url = str(data.get("webUrl") or data.get("web_url") or "Unknown web URL")
             client_id = str(data.get("clientId") or data.get("client_id") or "Unknown client")
-            print(f"FMS connected successfully - Web site URL: {web_url}")
-            print(f"Connected client: {client_id}")
+            print(f"FMS connected successfully - Web site URL: {web_url}", flush=True)
+            print(f"Connected client: {client_id}", flush=True)
             self.publish_system(f"Browser connected from {web_url}.")
             self.publish_alert("Info", f"Web app connected: {web_url}")
         elif msg.topic == TOPICS["system_disconnect"] and isinstance(data, dict):
             web_url = str(data.get("webUrl") or data.get("web_url") or "Unknown web URL")
-            print(f"FMS disconnected from web site URL: {web_url}")
+            print(f"FMS disconnected from web site URL: {web_url}", flush=True)
             self.publish_system(f"Browser disconnected from {web_url}.")
 
     def handle_job_create(self, data: dict) -> None:
@@ -283,7 +284,7 @@ def main() -> None:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Stopping FMS simulator...")
+        print("Stopping FMS simulator...", flush=True)
         simulator.client.loop_stop()
         simulator.client.disconnect()
 
