@@ -46,6 +46,10 @@ pip install -r fms_requirements.txt
 python fms_simulator.py
 ```
 
+When the browser connects successfully, it announces the current web app URL to the broker. The FMS simulator prints:
+
+- `FMS connected successfully - Web site URL: ...`
+
 By default the browser app uses the public MQTT broker `wss://broker.hivemq.com:8884/mqtt`. You can change the broker URL and client ID from the MQTT Communication panel in the sidebar.
 
 ## Behavior

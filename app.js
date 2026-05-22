@@ -226,6 +226,8 @@ function sanitizeHistory(list) {
 }
 
 const MQTT_TOPICS = {
+  systemConnect: "fluid/fpu/system/connect",
+  systemDisconnect: "fluid/fpu/system/disconnect",
   jobsCreate: "fluid/fpu/jobs/create",
   systemStart: "fluid/fpu/system/start",
   systemStop: "fluid/fpu/system/stop",
@@ -324,6 +326,14 @@ function connectMqtt() {
       pushMqttLog("MQTT", err ? `Subscribe failed: ${err.message}` : "Subscribed to FMS topics.");
       renderAll();
     });
+    publishMqtt(MQTT_TOPICS.systemConnect, {
+      event: "connect",
+      webUrl: window.location.href,
+      origin: window.location.origin,
+      clientId: state.mqtt.clientId,
+      brokerUrl: state.mqtt.brokerUrl,
+      timestamp: formatISTDateTime(new Date()),
+    });
     publishSystemSnapshot("MQTT connected.");
     renderAll();
   });
@@ -355,7 +365,22 @@ function connectMqtt() {
 }
 
 function disconnectMqtt() {
-  if (mqttClient) {
+  if (mqttClient && state.mqtt.connected) {
+    const payload = {
+      event: "disconnect",
+      webUrl: window.location.href,
+      origin: window.location.origin,
+      clientId: state.mqtt.clientId,
+      brokerUrl: state.mqtt.brokerUrl,
+      timestamp: formatISTDateTime(new Date()),
+    };
+    mqttClient.publish(MQTT_TOPICS.systemDisconnect, shortJson(payload), { qos: 0, retain: false }, () => {
+      if (mqttClient) {
+        mqttClient.end(true);
+        mqttClient = null;
+      }
+    });
+  } else if (mqttClient) {
     mqttClient.end(true);
     mqttClient = null;
   }
@@ -439,6 +464,21 @@ function simulateFms(topic, payload) {
   } else if (topic === MQTT_TOPICS.amrManual) {
     pushMqttLog("FMS", `AMR manual command: ${body}`);
     publishAmrSnapshot();
+  } else if (topic === MQTT_TOPICS.systemConnect) {
+    const details = typeof payload === "object" && payload ? payload : {};
+    const webUrl = details.webUrl || "Unknown web URL";
+    pushMqttLog("FMS", `Browser connected: ${webUrl}`);
+    publishSystemSnapshot(`Browser connected from ${webUrl}.`);
+    publishMqtt(MQTT_TOPICS.alertsEvent, {
+      severity: "Info",
+      message: `Web app connected: ${webUrl}`,
+      timestamp: formatISTDateTime(new Date()),
+    });
+  } else if (topic === MQTT_TOPICS.systemDisconnect) {
+    const details = typeof payload === "object" && payload ? payload : {};
+    const webUrl = details.webUrl || "Unknown web URL";
+    pushMqttLog("FMS", `Browser disconnected: ${webUrl}`);
+    publishSystemSnapshot(`Browser disconnected from ${webUrl}.`);
   } else if (topic === MQTT_TOPICS.statusSystem) {
     pushMqttLog("Status", `System: ${body}`);
   } else if (topic === MQTT_TOPICS.statusAmr) {

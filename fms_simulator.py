@@ -17,6 +17,8 @@ except ImportError as exc:  # pragma: no cover
 IST = ZoneInfo("Asia/Kolkata")
 
 TOPICS = {
+    "system_connect": "fluid/fpu/system/connect",
+    "system_disconnect": "fluid/fpu/system/disconnect",
     "jobs_create": "fluid/fpu/jobs/create",
     "system_start": "fluid/fpu/system/start",
     "system_stop": "fluid/fpu/system/stop",
@@ -82,9 +84,19 @@ class FmsSimulator:
 
     def on_connect(self, client, userdata, flags, reason_code, properties=None) -> None:
         print(f"MQTT connected: {reason_code}")
-        client.subscribe([(TOPICS["jobs_create"], 0), (TOPICS["system_start"], 0), (TOPICS["system_stop"], 0),
-                          (TOPICS["system_reset"], 0), (TOPICS["scheduler_reassign"], 0),
-                          (TOPICS["job_priority"], 0), (TOPICS["amr_manual"], 0)])
+        client.subscribe(
+            [
+                (TOPICS["system_connect"], 0),
+                (TOPICS["system_disconnect"], 0),
+                (TOPICS["jobs_create"], 0),
+                (TOPICS["system_start"], 0),
+                (TOPICS["system_stop"], 0),
+                (TOPICS["system_reset"], 0),
+                (TOPICS["scheduler_reassign"], 0),
+                (TOPICS["job_priority"], 0),
+                (TOPICS["amr_manual"], 0),
+            ]
+        )
         self.publish_snapshots("FMS online")
 
     def on_message(self, client, userdata, msg) -> None:
@@ -113,6 +125,17 @@ class FmsSimulator:
             self.publish_queue("Priority updated.")
         elif msg.topic == TOPICS["amr_manual"]:
             self.publish_amrs("Manual AMR command received.")
+        elif msg.topic == TOPICS["system_connect"] and isinstance(data, dict):
+            web_url = str(data.get("webUrl") or data.get("web_url") or "Unknown web URL")
+            client_id = str(data.get("clientId") or data.get("client_id") or "Unknown client")
+            print(f"FMS connected successfully - Web site URL: {web_url}")
+            print(f"Connected client: {client_id}")
+            self.publish_system(f"Browser connected from {web_url}.")
+            self.publish_alert("Info", f"Web app connected: {web_url}")
+        elif msg.topic == TOPICS["system_disconnect"] and isinstance(data, dict):
+            web_url = str(data.get("webUrl") or data.get("web_url") or "Unknown web URL")
+            print(f"FMS disconnected from web site URL: {web_url}")
+            self.publish_system(f"Browser disconnected from {web_url}.")
 
     def handle_job_create(self, data: dict) -> None:
         order_id = str(data.get("orderId") or data.get("order_id") or "").strip()
