@@ -433,7 +433,7 @@ input[type="range"] {
 .btn {
   border: 1px solid rgba(180, 138, 0, 0.18);
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 250, 224, 0.98), rgba(255, 241, 188, 0.98));
+  background: linear-gradient(135deg, rgba(255, 225, 87, 0.98), rgba(255, 189, 67, 0.95));
   color: var(--ink);
   font-weight: 900;
   padding: 0.85rem 1rem;
@@ -452,8 +452,8 @@ input[type="range"] {
 }
 
 .btn.accent {
-  background: linear-gradient(135deg, #fb7185, #f43f5e);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 225, 87, 0.98), rgba(255, 189, 67, 0.95));
+  color: var(--ink);
 }
 
 .suggestions {
